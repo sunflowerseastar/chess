@@ -1,0 +1,21 @@
+body {
+	margin: 0;
+}
+#app {
+	height: 100vh;
+	display: flex;
+	justify-content: center;
+}
+.board {
+	align-self: center;
+	border: 1px solid;
+}
+.row {
+	border: 1px solid;
+}
+.row span {
+	display: inline-block;
+	border: 1px solid;
+	width: 10vw;
+	height: 10vw;
+}
