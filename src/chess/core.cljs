@@ -20,17 +20,34 @@
 
 (def game (atom game-initial-state))
 
+(defn reset-game! []
+  (do
+    (reset! game game-initial-state)))
+
 (defn activate-piece [square row-index column-index]
   (do
     (println "activate-piece" square row-index column-index)
     (swap! game assoc :state :moving :moving-piece
            {:color (square :color) :type (square :type) :row-index row-index :colun-index column-index})))
 
+(defn get-color [row col])
+
+(defn land-piece [square row-index column-index]
+  (let [own-square-p (= (square :color) (get-color row-index column-index))
+        invalid-p own-square-p]
+    (do
+     (println "land-piece" square row-index column-index)
+     (cond
+       invalid-p (swap! game assoc :state :rest :moving-piece {})
+       true (swap! game assoc :state :rest :moving-piece {})))))
+
 (defn game-status [{:keys [state turn moving-piece]} game]
-  [:ul.game-status
-   [:li "state: " state]
-   [:li "turn: " turn]
-   [:li "moving-piece: " moving-piece]])
+  [:div.game-status
+   [:button {:on-click #(reset-game!)} "reset"]
+   [:ul
+    [:li "state: " state]
+    [:li "turn: " turn]
+    [:li "moving-piece: " moving-piece]]])
 
 (defn main []
   [:<>
@@ -43,12 +60,14 @@
         (map-indexed
          (fn [column-index square]
            ^{:key column-index}
-           [:span
-            {:on-click #(if (and (= (@game :turn) (square :color))
-                                 (= (@game :state) :rest))
-                          (do (println "yes")
-                              (activate-piece square row-index column-index)))}
-            (square :color) " : " (square :type)])
+           [:div.square
+            {:on-click #(cond (and
+                               (= (@game :state) :rest)
+                               (= (@game :turn) (square :color)))
+                              (activate-piece square row-index column-index)
+                              (= (@game :state) :moving)
+                              (land-piece square row-index column-index))}
+            (if (not-empty square) [:span.piece-container [:span (square :color) " : " (square :type)]])])
          row)])
      (@game :board))]])
 

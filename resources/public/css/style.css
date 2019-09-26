@@ -9,16 +9,37 @@ body {
 }
 .board {
 	align-self: center;
-	border: 1px solid;
+  /* border: 1px solid; */
 }
 .row {
-	border: 1px solid;
+	height: 8vw;
 }
-.row span {
-	display: inline-block;
-	border: 1px solid;
-	width: 10vw;
-	height: 10vw;
+.row:nth-child(odd) .square:nth-child(even),
+.row:nth-child(even) .square:nth-child(odd) {
+  background: #e2e2e2;
+}
+.square {
+  display: inline-block;
+  width: 8vw;
+	height: 8vw;
+}
+.square {
+  border-top: 1px solid #ddd;
+  border-left: 1px solid #ddd;
+}
+.square:last-child {
+  border-right: 1px solid #ddd;
+}
+.row:last-child .square {
+  border-bottom: 1px solid #ddd;
+}
+.piece-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.piece-container span {
+  align-self: center;
 }
 .game-status {
   position: absolute;
