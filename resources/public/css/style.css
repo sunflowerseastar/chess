@@ -34,9 +34,9 @@ body {
   border-bottom: 1px solid #ddd;
 }
 .piece-container {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  /* display: flex; */
+  /* flex-direction: column; */
+  /* justify-content: center; */
 }
 .piece-container span {
   align-self: center;
