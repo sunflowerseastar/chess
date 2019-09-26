@@ -1,5 +1,6 @@
 body {
 	margin: 0;
+	font-family: 'iosevka ss05', Menlo, 'Andale Mono', monospace;
 }
 #app {
 	height: 100vh;
@@ -18,4 +19,9 @@ body {
 	border: 1px solid;
 	width: 10vw;
 	height: 10vw;
+}
+.game-status {
+  position: absolute;
+  top: 0;
+  left: 0;
 }
