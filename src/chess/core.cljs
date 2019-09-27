@@ -30,17 +30,21 @@
     (swap! game assoc :state :moving :active-piece
            {:color (square :color) :piece-type (square :piece-type) :row-index row-index :column-index column-index})))
 
-(defn get-color [row col])
+(defn is-legal-pawn-move [color starting-column ending-column starting-row ending-row]
+  (let [same-column-p (= ending-column starting-column)
+        initial-move-p (or (and (= color 'w) (= starting-row 6)) (= starting-row 1))
+        distance (if (= color 'w) (- starting-row ending-row) (- ending-row starting-row))]
+    (do (println " scp " same-column-p " imp " initial-move-p " d " distance)
+        (cond (= distance 1) same-column-p
+           (and (= distance 2) same-column-p) initial-move-p
+           :else false))))
 
 (defn is-legal
   "Take an active (moving) piece and a landing position,
   and return bool on whether the move is permitted."
   [{:keys [color piece-type row-index column-index]} landing-row landing-column]
   (do (println "is-legal" color piece-type row-index column-index landing-row landing-column)
-      (cond (= piece-type 'p)
-            (cond (and (= color 'w) (= landing-column column-index)) (= landing-row (- row-index 1))
-                  (= color 'b) (= landing-row (+ row-index 1))
-                  :else false)
+      (cond (= piece-type 'p) (is-legal-pawn-move color column-index landing-column row-index landing-row)
             :else false)))
 
 (defn update-board! [active-piece landing-row landing-column]
@@ -50,6 +54,9 @@
     (swap! game assoc-in [:board landing-row landing-column] active-piece)
     (swap! game assoc-in [:board starting-row starting-column] {})))
 
+(defn clear-active-piece []
+  (swap! game assoc :state :rest :active-piece {}))
+
 (defn land-piece [landing-square landing-row landing-column]
   (let [landing-color (landing-square :color)
         active-piece (-> @game :active-piece)
@@ -58,10 +65,11 @@
     (do
       (println "land-piece" landing-color own-square-p legal-p landing-square landing-row landing-column)
       (cond
-        own-square-p (swap! game assoc :state :rest :active-piece {})
+        own-square-p clear-active-piece
         legal-p (do (println "yes legal-p move it" (@game :active-piece))
                     (update-board! (@game :active-piece) landing-row landing-column)
-                    (swap! game assoc :state :rest :active-piece {}))
+                    (clear-active-piece)
+                    (swap! game assoc :turn (if (= (@game :turn) 'w) 'b 'w)))
         true (swap! game assoc :state :rest :active-piece {})))))
 
 (defn game-status [{:keys [state turn active-piece]} game]
