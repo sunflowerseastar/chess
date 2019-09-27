@@ -7,23 +7,28 @@ body {
 	display: flex;
 	justify-content: center;
 }
+.game-status {
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0.3;
+}
 .board {
 	align-self: center;
-  /* border: 1px solid; */
-}
-.row {
-	height: 8vw;
+  display: grid;
+  width: 80%;
+  max-width: 60vh;
+  grid-template-columns: repeat(8, 12.5%);
+  border: 1px solid;
 }
 .row:nth-child(odd) .square:nth-child(even),
 .row:nth-child(even) .square:nth-child(odd) {
   background: #e2e2e2;
 }
 .square {
-  display: inline-block;
-  width: 8vw;
-	height: 8vw;
-}
-.square {
+  position: relative;
+  height: 0;
+  padding-bottom: 100%;
   border-top: 1px solid #ddd;
   border-left: 1px solid #ddd;
 }
@@ -34,15 +39,18 @@ body {
   border-bottom: 1px solid #ddd;
 }
 .piece-container {
-  /* display: flex; */
-  /* flex-direction: column; */
-  /* justify-content: center; */
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.piece-container:hover {
+  cursor: pointer;
 }
 .piece-container span {
   align-self: center;
-}
-.game-status {
-  position: absolute;
-  top: 0;
-  left: 0;
 }
