@@ -1,6 +1,7 @@
 (ns ^:figwheel-hooks chess.core
   (:require
    [goog.dom :as gdom]
+   [chess.svgs :as svgs :refer [svg-of]]
    [reagent.core :as reagent :refer [atom]]))
 
 (defn generate-board []
@@ -82,6 +83,8 @@
 
 (defn main []
   [:<>
+   ;; (svgs/svg-of 's)
+   ;; (svgs/svg-of 'p)
    [game-status @game]
    [:div.board
     (map-indexed
@@ -98,8 +101,9 @@
                              (activate-piece! square row-index column-index)
                              (= (@game :state) :moving)
                              (land-piece square row-index column-index))}
-           (if (not-empty square) [:span.piece-container [:span (square :color) " : " (square :piece-type)]])])
-        row))
+           (if (not-empty square)
+             [:span.piece-container
+              {:class (square :color)} (svg-of (square :piece-type))])]) row))
      (@game :board))]])
 
 (defn get-app-element []

@@ -8,49 +8,65 @@ body {
 	justify-content: center;
 }
 .game-status {
-  position: absolute;
-  top: 0;
-  left: 0;
-  opacity: 0.3;
+	position: absolute;
+	top: 0;
+	left: 0;
+	opacity: 0.3;
 }
 .board {
 	align-self: center;
-  display: grid;
-  width: 80%;
-  max-width: 60vh;
-  grid-template-columns: repeat(8, 12.5%);
-  border: 1px solid;
+	display: grid;
+	width: 80%;
+	max-width: 60vh;
+	grid-template-columns: repeat(8, 12.5%);
+	border: 1px solid;
 }
 .row:nth-child(odd) .square:nth-child(even),
 .row:nth-child(even) .square:nth-child(odd) {
-  background: #e2e2e2;
+	background: #e2e2e2;
 }
 .square {
-  position: relative;
-  height: 0;
-  padding-bottom: 100%;
-  border-top: 1px solid #ddd;
-  border-left: 1px solid #ddd;
+	position: relative;
+	height: 0;
+	padding-bottom: 100%;
+	border-top: 1px solid #ddd;
+	border-left: 1px solid #ddd;
 }
 .square:last-child {
-  border-right: 1px solid #ddd;
+	border-right: 1px solid #ddd;
 }
 .row:last-child .square {
-  border-bottom: 1px solid #ddd;
+	border-bottom: 1px solid #ddd;
 }
 .piece-container {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
 }
 .piece-container:hover {
-  cursor: pointer;
+	cursor: pointer;
 }
-.piece-container span {
-  align-self: center;
+svg {
+	align-self: center;
+	padding: 0.4em;
+}
+@media (min-width: 768px) {
+	svg {
+		max-width: 3.2vw;
+		max-height: 3.5vw;
+	}
+}
+.w svg {
+	fill: tan;
+	stroke: 1px solid;
+}
+.w {
+	color: tan;
+}
+.b h4 {
 }
