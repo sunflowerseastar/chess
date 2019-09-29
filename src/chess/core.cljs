@@ -37,8 +37,8 @@
         distance (if (= color 'w) (- starting-row ending-row) (- ending-row starting-row))]
     (do (println " scp " same-column-p " imp " initial-move-p " d " distance)
         (cond (= distance 1) same-column-p
-           (and (= distance 2) same-column-p) initial-move-p
-           :else false))))
+              (and (= distance 2) same-column-p) initial-move-p
+              :else false))))
 
 (defn is-legal
   "Take an active (moving) piece and a landing position,
@@ -83,10 +83,8 @@
 
 (defn main []
   [:<>
-   ;; (svgs/svg-of 's)
-   ;; (svgs/svg-of 'p)
    [game-status @game]
-   [:div.board
+   [:div.board {:class [(str "turn-" (@game :turn)) (str "state-" (name (@game :state)))]}
     (map-indexed
      (fn [row-index row]
        ^{:key row-index}

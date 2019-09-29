@@ -48,7 +48,8 @@ body {
 	flex-direction: column;
 	justify-content: center;
 }
-.piece-container:hover {
+.state-rest.turn-w .piece-container.w:hover,
+.state-rest.turn-b .piece-container.b:hover {
 	cursor: pointer;
 }
 svg {
