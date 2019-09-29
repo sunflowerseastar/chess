@@ -70,6 +70,23 @@
           y-only-p interim-ys-are-open-p
           :else false)))
 
+(defn is-legal-bishop-move-p [color starting-x ending-x starting-y ending-y]
+  (let [x-distance (Math/abs (- starting-x ending-x))
+        y-distance (Math/abs (- starting-y ending-y))
+        x-only-p (and (> x-distance 0) (= y-distance 0))
+        y-only-p (and (> y-distance 0) (= x-distance 0))
+        min-x (min starting-x ending-x)
+        max-x (max starting-x ending-x)
+        interim-xs (map #(nth (nth (@game :board) starting-y) %) (range (+ min-x 1) max-x))
+        interim-xs-are-open-p (every? empty? interim-xs)
+        min-y (min starting-y ending-y)
+        max-y (max starting-y ending-y)
+        interim-ys (map #(nth (nth (@game :board) %) starting-x) (range (+ min-y 1) max-y))
+        interim-ys-are-open-p (every? empty? interim-ys)]
+    (cond x-only-p interim-xs-are-open-p
+          y-only-p interim-ys-are-open-p
+          :else false)))
+
 (defn is-legal-p
   "Take an active (moving) piece and a landing position,
   and return bool on whether the move is permitted."
@@ -77,6 +94,7 @@
   (do (println "is-legal-p" color piece-type row-index column-index landing-row landing-column)
       (cond (= piece-type 'p) (is-legal-pawn-move-p color column-index landing-column row-index landing-row)
             (= piece-type 'r) (is-legal-rook-move-p color column-index landing-column row-index landing-row)
+            (= piece-type 'b) (is-legal-bishop-move-p color column-index landing-column row-index landing-row)
             (= piece-type 'k) (is-legal-king-move-p color column-index landing-column row-index landing-row)
             :else false)))
 
