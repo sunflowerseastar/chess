@@ -25,19 +25,19 @@
   (do
     (reset! game game-initial-state)))
 
-(defn activate-piece! [square row-index column-index]
+(defn activate-piece! [square y x]
   (swap! game assoc :state :moving :active-piece
-         {:color (square :color) :piece-type (square :piece-type) :row-index row-index :column-index column-index}))
+         {:color (square :color) :piece-type (square :piece-type) :y y :x x}))
 
 (defn get-color [row column]
   ((nth (nth (@game :board) row) column) :color))
 
-(defn is-legal-pawn-move-p [color starting-column ending-column starting-row ending-row]
-  (let [same-column-p (= ending-column starting-column)
-        x-distance (Math/abs (- starting-column ending-column))
-        initial-move-p (or (and (= color 'w) (= starting-row 6)) (= starting-row 1))
-        forward-y-distance (if (= color 'w) (- starting-row ending-row) (- ending-row starting-row))
-        landing-color (get-color ending-row ending-column)
+(defn is-legal-pawn-move-p [color start-x start-y end-x end-y]
+  (let [same-column-p (= end-x start-x)
+        x-distance (Math/abs (- start-x end-x))
+        initial-move-p (or (and (= color 'w) (= start-y 6)) (= start-y 1))
+        forward-y-distance (if (= color 'w) (- start-y end-y) (- end-y start-y))
+        landing-color (get-color end-y end-x)
         different-color-p (and (some? landing-color ) (not= color landing-color))]
     (cond (and (= forward-y-distance 1) (= x-distance 1) different-color-p) true
           different-color-p false
@@ -45,24 +45,27 @@
           (and (= forward-y-distance 2) same-column-p) initial-move-p
           :else false)))
 
-(defn is-legal-king-move-p [color starting-column ending-column starting-row ending-row]
-  (let [x-distance (Math/abs (- starting-column ending-column))
-        y-distance (Math/abs (- starting-row ending-row))
+(defn is-legal-king-move-p [color start-x start-y end-x end-y]
+  (let [x-distance (Math/abs (- start-x end-x))
+        y-distance (Math/abs (- start-y end-y))
         one-square-move-p (and (<= x-distance 1) (<= y-distance 1))]
     one-square-move-p))
 
-(defn is-legal-rook-move-p [color starting-x ending-x starting-y ending-y]
-  (let [x-distance (Math/abs (- starting-x ending-x))
-        y-distance (Math/abs (- starting-y ending-y))
+(defn get-piece [y x]
+  (-> (@game :board) (nth y) (nth x)))
+
+(defn is-legal-rook-move-p [color start-x start-y end-x end-y]
+  (let [x-distance (Math/abs (- start-x end-x))
+        y-distance (Math/abs (- start-y end-y))
         x-only-p (and (> x-distance 0) (= y-distance 0))
         y-only-p (and (> y-distance 0) (= x-distance 0))
-        min-x (min starting-x ending-x)
-        max-x (max starting-x ending-x)
-        interim-xs (map #(nth (nth (@game :board) starting-y) %) (range (+ min-x 1) max-x))
+        min-x (min start-x end-x)
+        max-x (max start-x end-x)
+        interim-xs (map #(get-piece start-y %) (range (+ min-x 1) max-x))
         interim-xs-are-open-p (every? empty? interim-xs)
-        min-y (min starting-y ending-y)
-        max-y (max starting-y ending-y)
-        interim-ys (map #(nth (nth (@game :board) %) starting-x) (range (+ min-y 1) max-y))
+        min-y (min start-y end-y)
+        max-y (max start-y end-y)
+        interim-ys (map #(get-piece % start-x) (range (+ min-y 1) max-y))
         interim-ys-are-open-p (every? empty? interim-ys)]
     (cond x-only-p interim-xs-are-open-p
           y-only-p interim-ys-are-open-p
@@ -72,31 +75,32 @@
   (if (< start end) (range start (+ end 1))
       (reverse (range end (+ start 1)))))
 
-(defn is-legal-bishop-move-p [color starting-x ending-x starting-y ending-y]
-  (let [x-distance (Math/abs (- starting-x ending-x))
-        y-distance (Math/abs (- starting-y ending-y))
-        board (@game :board)
-        xs (my-inclusive-range starting-x ending-x)
-        ys (my-inclusive-range starting-y ending-y)
-        interim-squares (->> (map #(nth (nth board %2) %1) xs ys) (drop 1) drop-last)
-        interim-ys-are-open-p (every? empty? interim-squares)]
-    (and (= x-distance y-distance) interim-ys-are-open-p)))
+(defn is-legal-bishop-move-p [color start-x start-y end-x end-y]
+  (let [x-distance (Math/abs (- start-x end-x))
+        y-distance (Math/abs (- start-y end-y))
+        xs (my-inclusive-range start-x end-x)
+        ys (my-inclusive-range start-y end-y)
+        interim-diagonals (->> (map get-piece ys xs) (drop 1) drop-last)
+        interim-diagonals-are-open-p (every? empty? interim-diagonals)]
+    (and (= x-distance y-distance) interim-diagonals-are-open-p)))
 
 (defn is-legal-p
   "Take an active (moving) piece and a landing position,
   and return bool on whether the move is permitted."
-  [{:keys [color piece-type row-index column-index]} landing-row landing-column]
-  (cond (= piece-type 'p) (is-legal-pawn-move-p color column-index landing-column row-index landing-row)
-        (= piece-type 'r) (is-legal-rook-move-p color column-index landing-column row-index landing-row)
-        (= piece-type 'b) (is-legal-bishop-move-p color column-index landing-column row-index landing-row)
-        (= piece-type 'k) (is-legal-king-move-p color column-index landing-column row-index landing-row)
-        :else false))
+  [{:keys [color piece-type y x]} end-y end-x]
+  (let [onto-same-color-p (= color ((get-piece end-y end-x) :color))]
+    (cond onto-same-color-p false
+          (= piece-type 'p) (is-legal-pawn-move-p color x y end-x end-y)
+          (= piece-type 'r) (is-legal-rook-move-p color x y end-x end-y)
+          (= piece-type 'b) (is-legal-bishop-move-p color x y end-x end-y)
+          (= piece-type 'k) (is-legal-king-move-p color x y end-x end-y)
+          :else false)))
 
-(defn update-board! [active-piece landing-row landing-column]
-  (let [starting-row (active-piece :row-index)
-        starting-column (active-piece :column-index)]
-    (swap! game assoc-in [:board landing-row landing-column] active-piece)
-    (swap! game assoc-in [:board starting-row starting-column] {})))
+(defn update-board! [active-piece end-y end-x]
+  (let [start-y (active-piece :y)
+        start-x (active-piece :x)]
+    (swap! game assoc-in [:board end-y end-x] active-piece)
+    (swap! game assoc-in [:board start-y start-x] {})))
 
 (defn clear-active-piece! []
   (swap! game assoc :state :rest :active-piece {}))
@@ -104,18 +108,12 @@
 (defn change-turn! []
   (swap! game assoc :turn (if (= (@game :turn) 'w) 'b 'w)))
 
-(defn land-piece! [landing-square landing-row landing-column]
-  (let [landing-color (landing-square :color)
-        active-piece (-> @game :active-piece)
-        onto-same-color-p (= (active-piece :color) landing-color)
-        legal-p (is-legal-p active-piece landing-row landing-column)]
-    (cond
-      onto-same-color-p clear-active-piece!
-      legal-p (do (println "yes legal-p move it" (@game :active-piece))
-                  (update-board! (@game :active-piece) landing-row landing-column)
-                  (clear-active-piece!)
-                  (change-turn!))
-      :else (println "DEBUG"))))
+(defn land-piece! [landing-square end-y end-x]
+  (let [active-piece (-> @game :active-piece)]
+    (do (println "land-piece! " active-piece)
+        (update-board! active-piece end-y end-x)
+        (clear-active-piece!)
+        (change-turn!))))
 
 (defn game-status [{:keys [state turn active-piece]} game]
   [:div.game-status
@@ -131,22 +129,24 @@
    (let [{:keys [active-piece board state turn]} @game]
      [:div.board
       (map-indexed
-       (fn [row-index row]
+       (fn [y row]
          (map-indexed
-          (fn [column-index square]
+          (fn [x square]
             (let [{:keys [color piece-type]} square
                   is-state-rest-p (= state :rest)
                   is-state-moving-p (= state :moving)
                   is-current-color-turn-p (= turn color)
                   can-activate-p (and is-state-rest-p is-current-color-turn-p)
-                  is-active-p (and (= (active-piece :row-index) row-index) (= (active-piece :column-index) column-index))]
+                  is-active-p (and (= (active-piece :y) y) (= (active-piece :x) x))]
               [:div.square
-               {:key (str row-index column-index)
+               {:key (str y x)
                 :class [(if can-activate-p "can-activate-p")
                         (if is-active-p "active-p")]
-                :style {:grid-column (+ column-index 1) :grid-row (+ row-index 1)}
-                :on-click #(cond can-activate-p (activate-piece! square row-index column-index)
-                                 is-state-moving-p (land-piece! square row-index column-index)
+                :style {:grid-column (+ x 1) :grid-row (+ y 1)}
+                :on-click #(cond can-activate-p (activate-piece! square y x)
+                                 is-state-moving-p (if (is-legal-p active-piece y x)
+                                                     (land-piece! square y x)
+                                                     (clear-active-piece!))
                                  is-active-p (clear-active-piece!))}
                (if (not-empty square)
                  [:span.piece-container
