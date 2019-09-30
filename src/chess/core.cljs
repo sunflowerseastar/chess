@@ -5,14 +5,14 @@
    [reagent.core :as reagent :refer [atom]]))
 
 (defn generate-board []
-  [(vec (for [r ['r 'n 'b 'q 'k 'b 'n 'r]] {:color 'b :piece-type r}))
+  [(vec (for [t ['r 'n 'b 'q 'k 'b 'n 'r]] {:color 'b :piece-type t}))
    (vec (repeat 8 {:color 'b :piece-type 'p}))
    (vec (repeat 8 {}))
    (vec (repeat 8 {}))
    (vec (repeat 8 {}))
    (vec (repeat 8 {}))
    (vec (repeat 8 {:color 'w :piece-type 'p}))
-   (vec (for [r ['r 'n 'b 'q 'k 'b 'n 'r]] {:color 'w :piece-type r}))])
+   (vec (for [t ['r 'n 'b 'q 'k 'b 'n 'r]] {:color 'w :piece-type t}))])
 
 (def game-initial-state {:state :rest
                          :turn 'w
@@ -98,21 +98,24 @@
     (swap! game assoc-in [:board landing-row landing-column] active-piece)
     (swap! game assoc-in [:board starting-row starting-column] {})))
 
-(defn clear-active-piece []
+(defn clear-active-piece! []
   (swap! game assoc :state :rest :active-piece {}))
 
-(defn land-piece [landing-square landing-row landing-column]
+(defn change-turn! []
+  (swap! game assoc :turn (if (= (@game :turn) 'w) 'b 'w)))
+
+(defn land-piece! [landing-square landing-row landing-column]
   (let [landing-color (landing-square :color)
         active-piece (-> @game :active-piece)
-        own-square-p (= (active-piece :color) landing-color)
+        onto-same-color-p (= (active-piece :color) landing-color)
         legal-p (is-legal-p active-piece landing-row landing-column)]
     (cond
-      own-square-p clear-active-piece
+      onto-same-color-p clear-active-piece!
       legal-p (do (println "yes legal-p move it" (@game :active-piece))
                   (update-board! (@game :active-piece) landing-row landing-column)
-                  (clear-active-piece)
-                  (swap! game assoc :turn (if (= (@game :turn) 'w) 'b 'w)))
-      true (swap! game assoc :state :rest :active-piece {}))))
+                  (clear-active-piece!)
+                  (change-turn!))
+      :else (println "DEBUG"))))
 
 (defn game-status [{:keys [state turn active-piece]} game]
   [:div.game-status
@@ -125,25 +128,30 @@
 (defn main []
   [:<>
    [game-status @game]
-   [:div.board {:class [(str "turn-" (@game :turn)) (str "state-" (name (@game :state)))]}
-    (map-indexed
-     (fn [row-index row]
-       ^{:key row-index}
-       (map-indexed
-        (fn [column-index square]
-          ^{:key column-index}
-          [:div.square
-           {:style {:grid-column (+ column-index 1) :grid-row (+ row-index 1)}
-            :on-click #(cond (and
-                              (= (@game :state) :rest)
-                              (= (@game :turn) (square :color)))
-                             (activate-piece! square row-index column-index)
-                             (= (@game :state) :moving)
-                             (land-piece square row-index column-index))}
-           (if (not-empty square)
-             [:span.piece-container
-              {:class (square :color)} (svg-of (square :piece-type))])]) row))
-     (@game :board))]])
+   (let [{:keys [active-piece board state turn]} @game]
+     [:div.board
+      (map-indexed
+       (fn [row-index row]
+         (map-indexed
+          (fn [column-index square]
+            (let [{:keys [color piece-type]} square
+                  is-state-rest-p (= state :rest)
+                  is-state-moving-p (= state :moving)
+                  is-current-color-turn-p (= turn color)
+                  can-activate-p (and is-state-rest-p is-current-color-turn-p)
+                  is-active-p (and (= (active-piece :row-index) row-index) (= (active-piece :column-index) column-index))]
+              [:div.square
+               {:key (str row-index column-index)
+                :class [(if can-activate-p "can-activate-p")
+                        (if is-active-p "active-p")]
+                :style {:grid-column (+ column-index 1) :grid-row (+ row-index 1)}
+                :on-click #(cond can-activate-p (activate-piece! square row-index column-index)
+                                 is-state-moving-p (land-piece! square row-index column-index)
+                                 is-active-p (clear-active-piece!))}
+               (if (not-empty square)
+                 [:span.piece-container
+                  {:class color} (svg-of piece-type)])])) row))
+       board)])])
 
 (defn get-app-element []
   (gdom/getElement "app"))

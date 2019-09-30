@@ -32,11 +32,24 @@ body {
 	border-top: 1px solid #ddd;
 	border-left: 1px solid #ddd;
 }
+.square svg {
+  opacity: 0.5;
+  transition: all 0.6s cubic-bezier(0.3, 0.8, 0.1, 0.95);
+}
 .square:last-child {
 	border-right: 1px solid #ddd;
 }
 .row:last-child .square {
 	border-bottom: 1px solid #ddd;
+}
+.square.can-activate-p {
+  cursor: pointer;
+}
+.square.active-p, .square.can-activate-p:hover {
+  cursor: pointer;
+}
+.square.active-p svg, .square.can-activate-p:hover svg {
+  opacity: 1;
 }
 .piece-container {
 	position: absolute;
@@ -47,10 +60,6 @@ body {
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
-}
-.state-rest.turn-w .piece-container.w:hover,
-.state-rest.turn-b .piece-container.b:hover {
-	cursor: pointer;
 }
 svg {
 	align-self: center;
