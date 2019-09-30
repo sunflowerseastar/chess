@@ -73,7 +73,8 @@
                   is-active-p (and (= (active-piece :y) y) (= (active-piece :x) x))]
               [:div.square
                {:key (str y x)
-                :class [(if can-activate-p "can-activate-p")
+                :class [(if (or (and (even? y) (odd? x)) (and (odd? y) (even? x))) "dark")
+                        (if can-activate-p "can-activate-p")
                         (if is-active-p "active-p")]
                 :style {:grid-column (+ x 1) :grid-row (+ y 1)}
                 :on-click #(cond can-activate-p (activate-piece! square y x)
