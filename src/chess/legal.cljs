@@ -14,14 +14,16 @@
 (defn is-legal-pawn-move-p [color start-x start-y end-x end-y board]
   (let [same-x-p (= end-x start-x)
         x-distance (Math/abs (- start-x end-x))
-        initial-move-p (or (and (= color 'w) (= start-y 6)) (= start-y 1))
         forward-y-distance (if (= color 'w) (- start-y end-y) (- end-y start-y))
         landing-color (get-color end-y end-x board)
-        different-color-p (and (some? landing-color) (not= color landing-color))]
-    (cond (and (= forward-y-distance 1) (= x-distance 1) different-color-p) true
+        different-color-p (and (some? landing-color) (not= color landing-color))
+        initial-move-p (or (and (= color 'w) (= start-y 6)) (= start-y 1))
+        square-1-y-forward (get-piece (if (= color 'w) (- start-y 1) (+ start-y 1)) start-x board)
+        is-square-1-y-forward-open-p (empty? square-1-y-forward)]
+    (cond (and different-color-p (= forward-y-distance 1) (= x-distance 1)) true
           different-color-p false
           (= forward-y-distance 1) same-x-p
-          (and (= forward-y-distance 2) same-x-p) initial-move-p
+          (and initial-move-p (= forward-y-distance 2) same-x-p) is-square-1-y-forward-open-p
           :else false)))
 
 (defn is-legal-knight-move-p [start-x start-y end-x end-y]
@@ -62,8 +64,8 @@
     (and (= x-distance y-distance) interim-diagonals-are-open-p)))
 
 (defn is-legal-p
-  "Take an active (moving) piece and a landing position,
-  and return bool on whether the move is permitted."
+  "Take an active (moving) piece, landing position, and board.
+  Return bool on whether the move is permitted."
   [{:keys [color piece-type y x]} end-y end-x board]
   (let [onto-same-color-p (= color (get-color end-y end-x board))]
     (cond onto-same-color-p false
