@@ -8,6 +8,9 @@
 (defn get-color [y x board]
   ((get-piece y x board) :color))
 
+(defn get-distance [a b]
+  (Math/abs (- a b)))
+
 (defn is-legal-pawn-move-p [color start-x start-y end-x end-y board]
   (let [same-x-p (= end-x start-x)
         x-distance (Math/abs (- start-x end-x))
@@ -21,15 +24,20 @@
           (and (= forward-y-distance 2) same-x-p) initial-move-p
           :else false)))
 
+(defn is-legal-knight-move-p [start-x start-y end-x end-y]
+  (let [x-distance (get-distance start-x end-x)
+        y-distance (get-distance start-y end-y)]
+    (or (and (= x-distance 2) (= y-distance 1)) (and (= x-distance 1) (= y-distance 2)))))
+
 (defn is-legal-king-move-p [start-x start-y end-x end-y]
-  (let [x-distance (Math/abs (- start-x end-x))
-        y-distance (Math/abs (- start-y end-y))
+  (let [x-distance (get-distance start-x end-x)
+        y-distance (get-distance start-y end-y)
         one-square-move-p (and (<= x-distance 1) (<= y-distance 1))]
     one-square-move-p))
 
 (defn is-legal-cardinal-move-p [start-x start-y end-x end-y board]
-  (let [x-distance (Math/abs (- start-x end-x))
-        y-distance (Math/abs (- start-y end-y))
+  (let [x-distance (get-distance start-x end-x)
+        y-distance (get-distance start-y end-y)
         x-only-p (and (> x-distance 0) (= y-distance 0))
         y-only-p (and (> y-distance 0) (= x-distance 0))
         min-x (min start-x end-x)
@@ -45,8 +53,8 @@
           :else false)))
 
 (defn is-legal-diagonal-move-p [start-x start-y end-x end-y board]
-  (let [x-distance (Math/abs (- start-x end-x))
-        y-distance (Math/abs (- start-y end-y))
+  (let [x-distance (get-distance start-x end-x)
+        y-distance (get-distance start-y end-y)
         xs (my-inclusive-range start-x end-x)
         ys (my-inclusive-range start-y end-y)
         interim-diagonals (->> (map #(get-piece %1 %2 board) ys xs) (drop 1) drop-last)
@@ -61,6 +69,7 @@
     (cond onto-same-color-p false
           (= piece-type 'p) (is-legal-pawn-move-p color x y end-x end-y board)
           (= piece-type 'r) (is-legal-cardinal-move-p x y end-x end-y board)
+          (= piece-type 'n) (is-legal-knight-move-p x y end-x end-y)
           (= piece-type 'b) (is-legal-diagonal-move-p x y end-x end-y board)
           (= piece-type 'q) (or
                              (is-legal-cardinal-move-p x y end-x end-y board)
