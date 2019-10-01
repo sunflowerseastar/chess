@@ -11,7 +11,7 @@
 (defn get-distance [a b]
   (Math/abs (- a b)))
 
-(defn is-legal-pawn-move-p [color start-x start-y end-x end-y board]
+(defn is-legal-pawn-move? [color start-x start-y end-x end-y board]
   (let [same-x-p (= end-x start-x)
         x-distance (Math/abs (- start-x end-x))
         forward-y-distance (if (= color 'w) (- start-y end-y) (- end-y start-y))
@@ -26,18 +26,18 @@
           (and initial-move-p (= forward-y-distance 2) same-x-p) is-square-1-y-forward-open-p
           :else false)))
 
-(defn is-legal-knight-move-p [start-x start-y end-x end-y]
+(defn is-legal-knight-move? [start-x start-y end-x end-y]
   (let [x-distance (get-distance start-x end-x)
         y-distance (get-distance start-y end-y)]
     (or (and (= x-distance 2) (= y-distance 1)) (and (= x-distance 1) (= y-distance 2)))))
 
-(defn is-legal-king-move-p [start-x start-y end-x end-y]
+(defn is-legal-king-move? [start-x start-y end-x end-y]
   (let [x-distance (get-distance start-x end-x)
         y-distance (get-distance start-y end-y)
         one-square-move-p (and (<= x-distance 1) (<= y-distance 1))]
     one-square-move-p))
 
-(defn is-legal-cardinal-move-p [start-x start-y end-x end-y board]
+(defn is-legal-cardinal-move? [start-x start-y end-x end-y board]
   (let [x-distance (get-distance start-x end-x)
         y-distance (get-distance start-y end-y)
         x-only-p (and (> x-distance 0) (= y-distance 0))
@@ -54,7 +54,7 @@
           y-only-p interim-ys-are-open-p
           :else false)))
 
-(defn is-legal-diagonal-move-p [start-x start-y end-x end-y board]
+(defn is-legal-diagonal-move? [start-x start-y end-x end-y board]
   (let [x-distance (get-distance start-x end-x)
         y-distance (get-distance start-y end-y)
         xs (my-inclusive-range start-x end-x)
@@ -63,27 +63,27 @@
         interim-diagonals-are-open-p (every? empty? interim-diagonals)]
     (and (= x-distance y-distance) interim-diagonals-are-open-p)))
 
-(defn is-legal-p
+(defn is-legal?
   "Take an active (moving) piece, landing position, and board.
   Return bool on whether the move is permitted."
   [{:keys [color piece-type y x]} end-y end-x board]
   (let [onto-same-color-p (= color (get-color end-y end-x board))]
     (cond onto-same-color-p false
-          (= piece-type 'p) (is-legal-pawn-move-p color x y end-x end-y board)
-          (= piece-type 'r) (is-legal-cardinal-move-p x y end-x end-y board)
-          (= piece-type 'n) (is-legal-knight-move-p x y end-x end-y)
-          (= piece-type 'b) (is-legal-diagonal-move-p x y end-x end-y board)
+          (= piece-type 'p) (is-legal-pawn-move? color x y end-x end-y board)
+          (= piece-type 'r) (is-legal-cardinal-move? x y end-x end-y board)
+          (= piece-type 'n) (is-legal-knight-move? x y end-x end-y)
+          (= piece-type 'b) (is-legal-diagonal-move? x y end-x end-y board)
           (= piece-type 'q) (or
-                             (is-legal-cardinal-move-p x y end-x end-y board)
-                             (is-legal-diagonal-move-p x y end-x end-y board))
-          (= piece-type 'k) (is-legal-king-move-p x y end-x end-y)
+                             (is-legal-cardinal-move? x y end-x end-y board)
+                             (is-legal-diagonal-move? x y end-x end-y board))
+          (= piece-type 'k) (is-legal-king-move? x y end-x end-y)
           :else false)))
 
-(defn in-check-p
+(defn in-check?
   "Take a color and a board, and return true if it's in check."
   [color board]
   (let [flat-board (flatten board)
         king (first (filter #(and (= (% :color) color) (= (% :piece-type) 'k)) flat-board))
         opponents (vec (filter #(= (% :color) (other-color color)) flat-board))
-        opponents-checking-ps (map #(is-legal-p % (king :y) (king :x) board) opponents)]
+        opponents-checking-ps (map #(is-legal? % (king :y) (king :x) board) opponents)]
     (some true? opponents-checking-ps)))

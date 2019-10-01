@@ -2,7 +2,7 @@
   (:require
    [goog.dom :as gdom]
    [chess.svgs :refer [svg-of]]
-   [chess.legal :refer [is-legal-p in-check-p]]
+   [chess.legal :refer [is-legal? in-check?]]
    [chess.helpers :refer [other-color]]
    [reagent.core :as reagent :refer [atom]]))
 
@@ -45,7 +45,7 @@
   (swap! game assoc :turn (other-color (@game :turn))))
 
 (defn update-check! []
-  (if (in-check-p (other-color (@game :turn)) (@game :board))
+  (if (in-check? (other-color (@game :turn)) (@game :board))
     (swap! game assoc :in-check (other-color (@game :turn)))
     (swap! game assoc :in-check nil)))
 
@@ -92,8 +92,8 @@
                 :on-click #(cond can-activate-p (activate-piece! square y x)
                                  is-active-p (clear-active-piece!)
                                  is-state-moving-p
-                                 (if (and (is-legal-p active-piece y x board)
-                                          (not (in-check-p (@game :turn) (board-after-move active-piece y x board))))
+                                 (if (and (is-legal? active-piece y x board)
+                                          (not (in-check? (@game :turn) (board-after-move active-piece y x board))))
                                    (land-piece! active-piece y x)
                                    (clear-active-piece!)))}
                (if (not-empty square)
