@@ -3,6 +3,7 @@
    [goog.dom :as gdom]
    [chess.svgs :refer [svg-of]]
    [chess.legal :refer [is-legal-p]]
+   [chess.helpers :refer [other-color]]
    [reagent.core :as reagent :refer [atom]]))
 
 (defn generate-board []
@@ -40,7 +41,7 @@
   (swap! game assoc :state :rest :active-piece {}))
 
 (defn change-turn! []
-  (swap! game assoc :turn (if (= (@game :turn) 'w) 'b 'w)))
+  (swap! game assoc :turn (other-color (@game :turn))))
 
 (defn land-piece! [landing-square end-y end-x]
   (let [active-piece (@game :active-piece)]

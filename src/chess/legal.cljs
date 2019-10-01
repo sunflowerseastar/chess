@@ -1,6 +1,6 @@
 (ns chess.legal
   (:require
-   [chess.helpers :refer [my-inclusive-range]]))
+   [chess.helpers :refer [my-inclusive-range other-color]]))
 
 (defn get-piece [y x board]
   (-> board (nth y) (nth x)))
