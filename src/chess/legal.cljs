@@ -78,3 +78,12 @@
                              (is-legal-diagonal-move-p x y end-x end-y board))
           (= piece-type 'k) (is-legal-king-move-p x y end-x end-y)
           :else false)))
+
+(defn in-check-p
+  "Take a color and a board, and return true if it's in check."
+  [color board]
+  (let [flat-board (flatten board)
+        king (first (filter #(and (= (% :color) color) (= (% :piece-type) 'k)) flat-board))
+        opponents (vec (filter #(= (% :color) (other-color color)) flat-board))
+        opponents-checking-ps (map #(is-legal-p % (king :y) (king :x) board) opponents)]
+    (some true? opponents-checking-ps)))

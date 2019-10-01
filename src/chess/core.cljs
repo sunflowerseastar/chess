@@ -2,7 +2,7 @@
   (:require
    [goog.dom :as gdom]
    [chess.svgs :refer [svg-of]]
-   [chess.legal :refer [is-legal-p]]
+   [chess.legal :refer [is-legal-p in-check-p]]
    [chess.helpers :refer [other-color]]
    [reagent.core :as reagent :refer [atom]]))
 
@@ -18,6 +18,7 @@
 
 (def game-initial-state {:state :rest
                          :turn 'w
+                         :in-check nil
                          :active-piece {}
                          :board (generate-board)})
 
@@ -34,7 +35,7 @@
 (defn update-board! [active-piece end-y end-x]
   (let [start-y (active-piece :y)
         start-x (active-piece :x)]
-    (swap! game assoc-in [:board end-y end-x] active-piece)
+    (swap! game assoc-in [:board end-y end-x] (assoc active-piece :y end-y :x end-x))
     (swap! game assoc-in [:board start-y start-x] {})))
 
 (defn clear-active-piece! []
@@ -43,25 +44,35 @@
 (defn change-turn! []
   (swap! game assoc :turn (other-color (@game :turn))))
 
-(defn land-piece! [landing-square end-y end-x]
-  (let [active-piece (@game :active-piece)]
-    (update-board! active-piece end-y end-x)
-    (clear-active-piece!)
-    (change-turn!)))
+(defn update-check! []
+  (if (in-check-p (other-color (@game :turn)) (@game :board))
+    (swap! game assoc :in-check (other-color (@game :turn)))
+    (swap! game assoc :in-check nil)))
 
-(defn game-status [{:keys [state turn active-piece]} game]
+(defn land-piece! [active-piece end-y end-x]
+  (update-board! active-piece end-y end-x)
+  (clear-active-piece!)
+  (update-check!)
+  (change-turn!))
+
+(defn board-after-move [active-piece end-y end-x board]
+  (-> board (assoc-in [end-y end-x] (assoc active-piece :y end-y :x end-x))
+      (assoc-in [(active-piece :y) (active-piece :x)] {})))
+
+(defn game-status [{:keys [active-piece in-check state turn]} game]
   [:div.game-status
    [:button {:on-click #(reset-game!)} "reset"]
    [:ul
     [:li "state: " state]
     [:li "turn: " turn]
+    [:li "in-check: " in-check]
     [:li "active-piece: " active-piece]]])
 
 (defn main []
   [:<>
    [game-status @game]
-   [:div.board
-    (let [{:keys [active-piece board state turn]} @game]
+   (let [{:keys [active-piece board in-check state turn]} @game]
+     [:div.board {:class (if in-check (str "in-check-" in-check))}
       (map-indexed
        (fn [y row]
          (map-indexed
@@ -80,14 +91,16 @@
                 :style {:grid-column (+ x 1) :grid-row (+ y 1)}
                 :on-click #(cond can-activate-p (activate-piece! square y x)
                                  is-active-p (clear-active-piece!)
-                                 is-state-moving-p (if (is-legal-p active-piece y x board)
-                                                     (land-piece! square y x)
-                                                     (clear-active-piece!)))}
+                                 is-state-moving-p
+                                 (if (and (is-legal-p active-piece y x board)
+                                          (not (in-check-p (@game :turn) (board-after-move active-piece y x board))))
+                                   (land-piece! active-piece y x)
+                                   (clear-active-piece!)))}
                (if (not-empty square)
                  [:span.piece-container
-                  {:class color} (svg-of piece-type)])]))
+                  {:class [color piece-type]} (svg-of piece-type)])]))
           row))
-       board))]])
+       board)])])
 
 (defn get-app-element []
   (gdom/getElement "app"))
