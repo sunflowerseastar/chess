@@ -1,6 +1,6 @@
 (ns chess.legal
   (:require
-   [chess.helpers :refer [my-inclusive-range other-color]]))
+   [chess.helpers :refer [board-after-move my-inclusive-range other-color]]))
 
 (defn get-piece [y x board]
   (-> board (nth y) (nth x)))
@@ -87,3 +87,17 @@
         opponents (vec (filter #(= (% :color) (other-color color)) flat-board))
         opponents-checking-ps (map #(is-legal? % (king :y) (king :x) board) opponents)]
     (some true? opponents-checking-ps)))
+
+(defn any-possible-moves?
+  "Take a color and a board, and return true if a move can end not in check."
+  [color board]
+  (let [flat-board (flatten board)
+        pieces (vec (filter #(= (% :color) color) flat-board))
+        all-squares (for [x (range 0 8) y (range 0 8)] [x y])
+        all-legal-moves-not-in-check (flatten (map #(map
+                                                     (fn [[x y]]
+                                                       (and (is-legal? % y x board)
+                                                            (not (in-check? 'b (board-after-move % y x board)))))
+                                                     all-squares)
+                                                   pieces))]
+    (some true? all-legal-moves-not-in-check)))

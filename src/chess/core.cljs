@@ -2,8 +2,8 @@
   (:require
    [goog.dom :as gdom]
    [chess.svgs :refer [svg-of]]
-   [chess.legal :refer [is-legal? in-check?]]
-   [chess.helpers :refer [other-color]]
+   [chess.legal :refer [is-legal? in-check? any-possible-moves?]]
+   [chess.helpers :refer [board-after-move other-color]]
    [reagent.core :as reagent :refer [atom]]))
 
 (defn generate-board []
@@ -49,15 +49,16 @@
     (swap! game assoc :in-check (other-color (@game :turn)))
     (swap! game assoc :in-check nil)))
 
-(defn land-piece! [active-piece end-y end-x]
-  (update-board! active-piece end-y end-x)
-  (clear-active-piece!)
-  (update-check!)
-  (change-turn!))
+(defn end-game! [color]
+  (println "end-game! (checkmate) win: " color))
 
-(defn board-after-move [active-piece end-y end-x board]
-  (-> board (assoc-in [end-y end-x] (assoc active-piece :y end-y :x end-x))
-      (assoc-in [(active-piece :y) (active-piece :x)] {})))
+(defn land-piece! [active-piece end-y end-x]
+  (do (update-board! active-piece end-y end-x)
+      (clear-active-piece!)
+      (update-check!)
+      (if (and (@game :in-check) (not (any-possible-moves? (other-color (active-piece :color)) (@game :board))))
+        (end-game! (active-piece :color))
+        (change-turn!))))
 
 (defn game-status [{:keys [active-piece in-check state turn]} game]
   [:div.game-status
