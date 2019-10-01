@@ -6,14 +6,14 @@
    [reagent.core :as reagent :refer [atom]]))
 
 (defn generate-board []
-  [(vec (for [t ['r 'n 'b 'q 'k 'b 'n 'r]] {:color 'b :piece-type t}))
-   (vec (repeat 8 {:color 'b :piece-type 'p}))
+  [(vec (map #(hash-map :color 'b :piece-type %1 :x %2 :y 0) ['r 'n 'b 'q 'k 'b 'n 'r] (range 0 8)))
+   (vec (for [x (range 0 8)] {:color 'b :piece-type 'p :x x :y 1}))
    (vec (repeat 8 {}))
    (vec (repeat 8 {}))
    (vec (repeat 8 {}))
    (vec (repeat 8 {}))
-   (vec (repeat 8 {:color 'w :piece-type 'p}))
-   (vec (for [t ['r 'n 'b 'q 'k 'b 'n 'r]] {:color 'w :piece-type t}))])
+   (vec (for [x (range 0 8)] {:color 'w :piece-type 'p :x x :y 6}))
+   (vec (map #(hash-map :color 'w :piece-type %1 :x %2 :y 7) ['r 'n 'b 'q 'k 'b 'n 'r] (range 0 8)))])
 
 (def game-initial-state {:state :rest
                          :turn 'w
