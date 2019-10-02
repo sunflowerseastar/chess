@@ -72,8 +72,10 @@
 (defn main []
   [:<>
    [game-status @game]
-   (let [{:keys [active-piece board in-check state turn]} @game]
-     [:div.board {:class (if in-check (str "in-check-" in-check))}
+   (let [{:keys [active-piece board in-check state turn]} @game
+         {king-x :x, king-y :y, :or {king-x -1 king-y -1}}
+         (first (filter #(and (= (% :color) in-check) (= (% :piece-type) 'k)) (flatten board)))]
+     [:div.board {:class (if (not-empty active-piece) "is-active")}
       (map-indexed
        (fn [y row]
          (map-indexed
@@ -88,7 +90,8 @@
                {:key (str y x)
                 :class [(if (or (and (even? y) (odd? x)) (and (odd? y) (even? x))) "dark")
                         (if can-activate-p "can-activate-p")
-                        (if is-active-p "active-p")]
+                        (if is-active-p "active-p")
+                        (if (and (= king-x x) (= king-y y)) "in-check")]
                 :style {:grid-column (+ x 1) :grid-row (+ y 1)}
                 :on-click #(cond can-activate-p (activate-piece! square y x)
                                  is-active-p (clear-active-piece!)
