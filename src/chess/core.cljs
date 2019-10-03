@@ -35,7 +35,7 @@
 (defn start! []
   (do
     (reset! game game-initial-state)
-    (swap! game assoc :state :rest :turn 'w)))
+    (swap! game assoc :state :rest :turn 'w :board (generate-board))))
 
 (defn activate-piece! [square y x]
   (swap! game assoc :state :moving :active-piece
@@ -102,8 +102,9 @@
     [:li "active-piece: " active-piece]]])
 
 (defn main []
-  (let [{:keys [active-piece board in-check state turn]} @game
+  (let [{:keys [active-piece board current-winner in-check state turn]} @game
         stopped-p (= state :stopped)
+        off-p (and (= state :stopped) (nil? current-winner))
         {king-x :x, king-y :y, :or {king-x -1 king-y -1}}
         (first (filter #(and (= (% :color) in-check) (= (% :piece-type) 'k)) (flatten board)))]
     [:div.chess {:class (if (@game :show-stats) "stats-showing")}
@@ -113,7 +114,8 @@
      [:div.rook-three-lines {:on-click #(swap! game assoc :show-stats (not (@game :show-stats)))}
       (svg-of 'm)]
      [:div.board {:class [(if (not-empty active-piece) "is-active")
-                          (if stopped-p "stopped-p")]}
+                          (if stopped-p "stopped-p")
+                          (if off-p "off-p")]}
       (map-indexed
        (fn [y row]
          (map-indexed
