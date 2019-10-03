@@ -101,3 +101,22 @@
                                                      all-squares)
                                                    pieces))]
     (some true? all-legal-moves-not-in-check)))
+
+(defn can-castle-left? [color board]
+  (let [y (if (= color 'w) 7 0)
+        king-p (= ((get-piece y 4 board) :piece-type) 'k)
+        rook-left-p (= ((get-piece y 0 board) :piece-type) 'r)
+        interim-xs (map #(get-piece y % board) [1 2 3])
+        interim-xs-are-open-p (every? empty? interim-xs)]
+    (and king-p rook-left-p interim-xs-are-open-p)))
+
+(defn can-castle-right? [color board]
+  (let [y (if (= color 'w) 7 0)
+        king-p (= ((get-piece y 4 board) :piece-type) 'k)
+        rook-right-p (= ((get-piece y 7 board) :piece-type) 'r)
+        interim-xs (map #(get-piece y % board) [5 6])
+        interim-xs-are-open-p (every? empty? interim-xs)]
+    (and king-p rook-right-p interim-xs-are-open-p)))
+
+(defn can-castle? [color board]
+  (or (can-castle-left? color board) (can-castle-right? color board)))

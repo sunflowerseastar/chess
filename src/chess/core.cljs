@@ -2,7 +2,7 @@
   (:require
    [goog.dom :as gdom]
    [chess.svgs :refer [svg-of]]
-   [chess.legal :refer [is-legal? in-check? any-possible-moves?]]
+   [chess.legal :refer [is-legal? in-check? any-possible-moves? can-castle? can-castle-left?]]
    [chess.helpers :refer [board-after-move other-color]]
    [reagent.core :as reagent :refer [atom]]))
 
@@ -16,8 +16,12 @@
    (vec (for [x (range 0 8)] {:color 'w :piece-type 'p :x x :y 6}))
    (vec (map #(hash-map :color 'w :piece-type %1 :x %2 :y 7) ['r 'n 'b 'q 'k 'b 'n 'r] (range 0 8)))])
 
-(def game-initial-state {:state :rest
-                         :turn 'w
+(def game-initial-state {:wins {:w 0 :b 0}
+                         :draws 0
+                         :current-winner nil
+                         :show-stats false
+                         :state :stopped
+                         :turn nil
                          :in-check nil
                          :active-piece {}
                          :board (generate-board)})
@@ -27,6 +31,11 @@
 (defn reset-game! []
   (do
     (reset! game game-initial-state)))
+
+(defn start! []
+  (do
+    (reset! game game-initial-state)
+    (swap! game assoc :state :rest :turn 'w)))
 
 (defn activate-piece! [square y x]
   (swap! game assoc :state :moving :active-piece
@@ -44,38 +53,67 @@
 (defn change-turn! []
   (swap! game assoc :turn (other-color (@game :turn))))
 
+(defn castle! []
+  (let [{:keys [turn board]} @game
+        y (if (= turn 'w) 7 0)]
+    (do
+      (if (can-castle-left? turn board)
+        (do
+          (swap! game assoc-in [:board y 2] {:piece-type 'k :color turn :x 2 :y y})
+          (swap! game assoc-in [:board y 4] {})
+          (swap! game assoc-in [:board y 3] {:piece-type 'r :color turn :x 2 :y y})
+          (swap! game assoc-in [:board y 0] {}))
+        (do
+          (swap! game assoc-in [:board y 6] {:piece-type 'k :color turn :x 2 :y y})
+          (swap! game assoc-in [:board y 4] {})
+          (swap! game assoc-in [:board y 5] {:piece-type 'r :color turn :x 2 :y y})
+          (swap! game assoc-in [:board y 7] {})))
+      (change-turn!))))
+
 (defn update-check! []
   (if (in-check? (other-color (@game :turn)) (@game :board))
     (swap! game assoc :in-check (other-color (@game :turn)))
     (swap! game assoc :in-check nil)))
 
-(defn end-game! [color]
-  (println "end-game! (checkmate) win: " color))
+(defn checkmate! [color]
+  (let [win-color (if (= color 'w) :w :b)]
+    (do (swap! game assoc-in [:wins win-color] (inc (-> @game :wins win-color)) :current-winner color)
+        (swap! game assoc :current-winner color :state :stopped :turn nil))))
 
 (defn land-piece! [active-piece end-y end-x]
   (do (update-board! active-piece end-y end-x)
       (clear-active-piece!)
       (update-check!)
       (if (and (@game :in-check) (not (any-possible-moves? (other-color (active-piece :color)) (@game :board))))
-        (end-game! (active-piece :color))
+        (checkmate! (active-piece :color))
         (change-turn!))))
 
-(defn game-status [{:keys [active-piece in-check state turn]} game]
+(defn game-status [{:keys [active-piece current-winner draws in-check state turn draws], {:keys [w b]} :wins} game]
   [:div.game-status
    [:button {:on-click #(reset-game!)} "reset"]
    [:ul
+    [:li "wins:"
+     [:ul [:li "white: " w] [:li "black: " b]]]
+    [:li "draws: " draws]
+    [:li "current-winner: " current-winner]
     [:li "state: " state]
     [:li "turn: " turn]
     [:li "in-check: " in-check]
     [:li "active-piece: " active-piece]]])
 
 (defn main []
-  [:<>
-   [game-status @game]
-   (let [{:keys [active-piece board in-check state turn]} @game
-         {king-x :x, king-y :y, :or {king-x -1 king-y -1}}
-         (first (filter #(and (= (% :color) in-check) (= (% :piece-type) 'k)) (flatten board)))]
-     [:div.board {:class (if (not-empty active-piece) "is-active")}
+  (let [{:keys [active-piece board in-check state turn]} @game
+        stopped-p (= state :stopped)
+        {king-x :x, king-y :y, :or {king-x -1 king-y -1}}
+        (first (filter #(and (= (% :color) in-check) (= (% :piece-type) 'k)) (flatten board)))]
+    [:div.chess {:class (if (@game :show-stats) "stats-showing")}
+     [:div.stats {:class (if (@game :show-stats) "active")
+                  :on-click #(swap! game assoc :show-stats (not (@game :show-stats)))}
+      [game-status ^{:class "stats"} @game]]
+     [:div.rook-three-lines {:on-click #(swap! game assoc :show-stats (not (@game :show-stats)))}
+      (svg-of 'm)]
+     [:div.board {:class [(if (not-empty active-piece) "is-active")
+                          (if stopped-p "stopped-p")]}
       (map-indexed
        (fn [y row]
          (map-indexed
@@ -104,7 +142,11 @@
                  [:span.piece-container
                   {:class [color piece-type]} (svg-of piece-type)])]))
           row))
-       board)])])
+       board)]
+     (let [can-castle-p (can-castle? turn board)]
+       [:div.button-container
+        [:button {:class (if (not stopped-p) "inactive") :on-click #(start!)} "start"]
+        [:button {:class (if (not can-castle-p) "inactive") :on-click #(castle!)} "castle"]])]))
 
 (defn get-app-element []
   (gdom/getElement "app"))

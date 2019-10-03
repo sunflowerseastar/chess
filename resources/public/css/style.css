@@ -4,15 +4,21 @@ body {
 }
 #app {
 	height: 100vh;
+}
+.chess {
+	height: 100vh;
 	display: flex;
-	justify-content: center;
+	flex-direction: column;
+	justify-content: space-between;
+	padding: 4vw 6vw;
+	box-sizing: border-box;
 }
-.game-status {
-	position: absolute;
-	top: 0;
-	left: 0;
-	opacity: 0.3;
+.chess.stats-showing > div {
+	opacity: 0.1;
+	filter: blur(2px);
+	pointer-events: none;
 }
+
 .board {
 	align-self: center;
 	display: grid;
@@ -20,6 +26,10 @@ body {
 	max-width: 60vh;
 	grid-template-columns: repeat(8, 12.5%);
 	border: 2px solid;
+}
+.board.stopped-p {
+	transition: all 0.15s cubic-bezier(0.3, 0.8, 0.1, 0.95);
+	border-color: white;
 }
 .square {
 	position: relative;
@@ -40,11 +50,11 @@ body {
 	transition: all 0.15s cubic-bezier(0.3, 0.8, 0.1, 0.95);
 }
 .square:before {
-  margin: 1px;
+	margin: 1px;
 }
 .square:after {
 	opacity: 0;
-  margin: 3px;
+	margin: 3px;
 	border: 3px solid #eee;
 }
 .square.dark:after {
@@ -101,4 +111,112 @@ svg {
 .square.in-check:after {
 	border: 3px solid red;
 	opacity: 1;
+}
+
+.rook-three-lines {
+	align-self: center;
+	width: 32px;
+  cursor: pointer;
+}
+
+.stats {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	display: flex;
+	padding: 0 2em;
+	border: 1px solid #888;
+	opacity: 0;
+	pointer-events: none;
+}
+.stats.active {
+	flex: 1;
+	opacity: 1 !important;
+	pointer-events: initial !important;
+	filter: blur(0) !important;
+	z-index: 2;
+}
+.game-status {
+	flex: 1;
+	align-self: center;
+	max-width: 320px;
+	margin: 0 auto;
+	padding: 1em 30px 1.4em 40px;
+	min-height: 16.5vh;
+	border: 1px solid #bbb;
+}
+@media (min-width: 768px) {
+	.game-status {
+		padding: 15px 30px 18px 40px;
+		margin-bottom: 0.8em;
+	}
+}
+.game-status li {
+	font-size: 11px;
+	list-style: square;
+	text-align: left;
+}
+
+.button-container {
+	margin: 2em 0;
+	text-align: center;
+}
+button {
+	display: inline-block;
+	min-width: 100px;
+	color: white;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	font-size: 10px;
+	padding: 10px 20px;
+	background: black;
+	border: 1px solid black;
+}
+button:focus {
+	outline: none;
+	position: relative;
+}
+button:focus:after {
+	content: '';
+	display: block;
+	position: absolute;
+	top: -5px;
+	left: -6px;
+	width: calc(100% + 10px);
+	height: calc(100% + 8px);
+	border: 1px solid #e2e2e2;
+}
+@media (min-width: 1080px) {
+	.button {
+		font-size: 12px;
+	}
+}
+@media (hover: hover) {
+	button:hover {
+		color: black;
+		background: white;
+		cursor: pointer;
+	}
+}
+button + button {
+	margin-left: calc(3vw * 1.5);
+}
+@media (min-width: 480px) {
+	button + button {
+		margin-left: 3vw;
+	}
+}
+button.inactive,
+.inactive button {
+	opacity: 0.2;
+	cursor: default;
+	pointer-events: none;
+}
+@media (hover: hover) {
+	.inactive button:hover {
+		color: white;
+		background: black;
+	}
 }
