@@ -2,7 +2,7 @@
   (:require
    [goog.dom :as gdom]
    [chess.svgs :refer [svg-of]]
-   [chess.legal :refer [is-legal? in-check? any-possible-moves? can-castle? can-castle-left?]]
+   [chess.legal :refer [pawn-two-square-move-from-initial-rank? is-legal? in-check? any-possible-moves? can-castle? can-castle-left?]]
    [chess.helpers :refer [board-after-move other-color]]
    [reagent.core :as reagent :refer [atom]]))
 
@@ -17,6 +17,8 @@
    (vec (map #(hash-map :color 'w :piece-type %1 :x %2 :y 7) ['r 'n 'b 'q 'k 'b 'n 'r] (range 0 8)))])
 
 (def game-initial-state {:wins {:w 0 :b 0}
+                         :can-castle-p {:w 1 :b 1}
+                         :en-passant-target {:x -1 :y -1}
                          :draws 0
                          :current-winner nil
                          :show-stats false
@@ -71,9 +73,19 @@
       (change-turn!))))
 
 (defn update-check! []
-  (if (in-check? (other-color (@game :turn)) (@game :board))
+  (if (in-check? (other-color (@game :turn)) (@game :board) (@game :en-passant-target))
     (swap! game assoc :in-check (other-color (@game :turn)))
     (swap! game assoc :in-check nil)))
+
+(defn update-en-passant! [active-piece end-y end-x]
+  (letfn [(reset-en-passant! [] (swap! game update :en-passant-target assoc :x -1 :y -1))]
+    (let [is-pawn (= (active-piece :piece-type) 'p)
+          pawn-two-square-move-from-initial-rank-p (and is-pawn (pawn-two-square-move-from-initial-rank? (@game :turn) (active-piece :x) (active-piece :y) end-x end-y (@game :board)))
+          en-passant-capture-p (and is-pawn (= (-> @game :en-passant-target :x) end-x) (= (-> @game :en-passant-target :y) end-y))]
+      (cond pawn-two-square-move-from-initial-rank-p (swap! game update :en-passant-target assoc :x end-x :y (if (= (@game :turn) 'w) (+ end-y 1) (- end-y 1)))
+            en-passant-capture-p (do (swap! game assoc-in [:board (if (= (@game :turn) 'w) (+ end-y 1) (- end-y 1)) end-x] {})
+                                     (reset-en-passant!))
+            :else (reset-en-passant!)))))
 
 (defn checkmate! [color]
   (let [win-color (if (= color 'w) :w :b)]
@@ -83,17 +95,22 @@
 (defn land-piece! [active-piece end-y end-x]
   (do (update-board! active-piece end-y end-x)
       (clear-active-piece!)
+      (update-en-passant! active-piece end-y end-x)
       (update-check!)
-      (if (and (@game :in-check) (not (any-possible-moves? (other-color (active-piece :color)) (@game :board))))
+      (if (and (@game :in-check) (not (any-possible-moves? (other-color (active-piece :color)) (@game :board) (@game :en-passant-target))))
         (checkmate! (active-piece :color))
         (change-turn!))))
 
-(defn game-status [{:keys [active-piece current-winner draws in-check state turn draws], {:keys [w b]} :wins} game]
+(defn game-status [{:keys [active-piece can-castle-p current-winner draws in-check state turn draws], {:keys [w b]} :wins, {:keys [x y]} :en-passant-target} game]
   [:div.game-status
    [:button {:on-click #(reset-game!)} "reset"]
    [:ul
     [:li "wins:"
      [:ul [:li "white: " w] [:li "black: " b]]]
+    [:li "castle availability:"
+     [:ul [:li "white: " (can-castle-p :w)] [:li "black: " (can-castle-p :b)]]]
+    [:li "en passant:"
+     [:ul [:li "x: " x] [:li "y: " y]]]
     [:li "draws: " draws]
     [:li "current-winner: " current-winner]
     [:li "state: " state]
@@ -102,7 +119,7 @@
     [:li "active-piece: " active-piece]]])
 
 (defn main []
-  (let [{:keys [active-piece board current-winner in-check state turn]} @game
+  (let [{:keys [active-piece board castling-availability current-winner en-passant-target in-check state turn]} @game
         stopped-p (= state :stopped)
         off-p (and (= state :stopped) (nil? current-winner))
         {king-x :x, king-y :y, :or {king-x -1 king-y -1}}
@@ -136,8 +153,8 @@
                 :on-click #(cond can-activate-p (activate-piece! square y x)
                                  is-active-p (clear-active-piece!)
                                  is-state-moving-p
-                                 (if (and (is-legal? active-piece y x board)
-                                          (not (in-check? (@game :turn) (board-after-move active-piece y x board))))
+                                 (if (and (is-legal? active-piece y x board en-passant-target)
+                                          (not (in-check? (@game :turn) (board-after-move active-piece y x board) en-passant-target)))
                                    (land-piece! active-piece y x)
                                    (clear-active-piece!)))}
                (if (not-empty square)
