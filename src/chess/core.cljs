@@ -39,14 +39,14 @@
     (reset! game game-initial-state)
     (swap! game assoc :state :rest :turn 'w :board (generate-board))))
 
-(defn activate-piece! [square y x]
+(defn activate-piece! [square x y]
   (swap! game assoc :state :moving :active-piece
-         {:color (square :color) :piece-type (square :piece-type) :y y :x x}))
+         {:color (square :color) :piece-type (square :piece-type) :x x :y y}))
 
-(defn update-board! [active-piece end-y end-x]
+(defn update-board! [active-piece end-x end-y]
   (let [start-y (active-piece :y)
         start-x (active-piece :x)]
-    (swap! game assoc-in [:board end-y end-x] (assoc active-piece :y end-y :x end-x))
+    (swap! game assoc-in [:board end-y end-x] (assoc active-piece :x end-x :y end-y))
     (swap! game assoc-in [:board start-y start-x] {})))
 
 (defn clear-active-piece! []
@@ -77,7 +77,7 @@
     (swap! game assoc :in-check (other-color (@game :turn)))
     (swap! game assoc :in-check nil)))
 
-(defn update-en-passant! [active-piece end-y end-x]
+(defn update-en-passant! [active-piece end-x end-y]
   (letfn [(reset-en-passant! [] (swap! game update :en-passant-target assoc :x -1 :y -1))]
     (let [is-pawn (= (active-piece :piece-type) 'p)
           pawn-two-square-move-from-initial-rank-p (and is-pawn (pawn-two-square-move-from-initial-rank? (@game :turn) (active-piece :x) (active-piece :y) end-x end-y (@game :board)))
@@ -92,10 +92,10 @@
     (do (swap! game assoc-in [:wins win-color] (inc (-> @game :wins win-color)) :current-winner color)
         (swap! game assoc :current-winner color :state :stopped :turn nil))))
 
-(defn land-piece! [active-piece end-y end-x]
-  (do (update-board! active-piece end-y end-x)
+(defn land-piece! [active-piece end-x end-y]
+  (do (update-board! active-piece end-x end-y)
       (clear-active-piece!)
-      (update-en-passant! active-piece end-y end-x)
+      (update-en-passant! active-piece end-x end-y)
       (update-check!)
       (if (and (@game :in-check) (not (any-possible-moves? (other-color (active-piece :color)) (@game :board) (@game :en-passant-target))))
         (checkmate! (active-piece :color))
@@ -142,20 +142,20 @@
                   is-state-moving-p (= state :moving)
                   is-current-color-turn-p (= turn color)
                   can-activate-p (and is-state-rest-p is-current-color-turn-p)
-                  is-active-p (and (= (active-piece :y) y) (= (active-piece :x) x))]
+                  is-active-p (and (= (active-piece :x) x) (= (active-piece :y) y))]
               [:div.square
-               {:key (str y x)
+               {:key (str x y)
                 :class [(if (or (and (even? y) (odd? x)) (and (odd? y) (even? x))) "dark")
                         (if can-activate-p "can-activate-p")
                         (if is-active-p "active-p")
                         (if (and (= king-x x) (= king-y y)) "in-check")]
                 :style {:grid-column (+ x 1) :grid-row (+ y 1)}
-                :on-click #(cond can-activate-p (activate-piece! square y x)
+                :on-click #(cond can-activate-p (activate-piece! square x y)
                                  is-active-p (clear-active-piece!)
                                  is-state-moving-p
-                                 (if (and (is-legal? active-piece y x board en-passant-target)
-                                          (not (in-check? (@game :turn) (board-after-move active-piece y x board) en-passant-target)))
-                                   (land-piece! active-piece y x)
+                                 (if (and (is-legal? active-piece x y board en-passant-target)
+                                          (not (in-check? (@game :turn) (board-after-move active-piece x y board) en-passant-target)))
+                                   (land-piece! active-piece x y)
                                    (clear-active-piece!)))}
                (if (not-empty square)
                  [:span.piece-container
