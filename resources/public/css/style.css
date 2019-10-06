@@ -9,27 +9,49 @@ body {
 	height: 100vh;
 	display: flex;
 	flex-direction: column;
-	justify-content: space-between;
-	padding: 2em 1em;
+	justify-content: flex-end;
+	padding: 48px 1em 1em;
 	box-sizing: border-box;
 }
 
+.board-container {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}
+@media (min-width: 768px) {
+	.board-container {
+		padding: 1em 0;
+	}
+}
 .board {
 	position: relative;
 	align-self: center;
 	display: grid;
-	width: 90%;
-	max-width: 72vh;
-	margin: 1em auto;
+	width: 100%;
+	max-width: 54vh;
+	margin: 0 auto;
 	grid-template-columns: repeat(8, 12.5%);
 	transition: all 1s cubic-bezier(0.3, 0.8, 0.1, 0.95);
+}
+@media (min-width: 480px) {
+	.board {
+		width: 80%;
+	}
+}
+@media (min-width: 768px) {
+	.board {
+		width: 90%;
+		max-width: 72vh;
+	}
 }
 .board:before,
 .board:before {
 	transition: opacity 1s linear;
-  border-top: 1px transparent;
-  border-bottom: 1px transparent;
-  opacity: 0;
+	border-top: 1px transparent;
+	border-bottom: 1px transparent;
+	opacity: 0;
 }
 .board.b:before,
 .board.w:before {
@@ -37,7 +59,7 @@ body {
 	position: absolute;
 	left: -6px;
 	right: -6px;
-  opacity: 1;
+	opacity: 1;
 }
 .board.w:before {
 	bottom: -10px;
@@ -164,7 +186,7 @@ svg.w {
 	);
 }
 .checkmate .square:after {
-  border-color: transparent;
+	border-color: transparent;
 }
 .square.in-check:after {
 	border: 3px solid yellow;
@@ -178,7 +200,7 @@ svg.w {
 	position: absolute;
 	top: 0;
 	left: 0;
-	width: 25px;
+	width: 18px;
 	padding: 3vw 3.6vw;
 	cursor: pointer;
 	z-index: 2;
@@ -227,40 +249,67 @@ svg.w {
 	max-width: 600px;
 	min-height: 40vh;
 	margin: 0 auto;
-	padding: 1em 30px 1.4em 40px;
 	color: white;
+}
+@media (min-width: 480px) {
+	.game-status {
+		stroke-width: 8px;
+	}
 }
 @media (min-width: 768px) {
 	.game-status {
-		padding: 15px 30px 18px 40px;
 		margin-bottom: 0.8em;
 	}
 }
 .game-status ul {
 	padding-left: 15px;
 }
+
 .game-status li {
-	font-size: 15px;
+	font-size: 9px;
 	list-style: square;
 	text-align: left;
 	line-height: 1.8;
 }
+@media (min-width: 480px) {
+	.game-status li {
+		font-size: 11px;
+	}
+}
+@media (min-width: 768px) {
+	.game-status li {
+		font-size: 13px;
+	}
+}
+@media (min-width: 992px) {
+	.game-status li {
+		font-size: 14px;
+	}
+}
 
 .button-container {
 	box-sizing: border-box;
-	flex: 1;
 	align-self: center;
 	display: flex;
-	flex-direction: row;
-	padding: 3vh;
+	flex-direction: column;
 	width: 100%;
+	padding-top: 1em;
+}
+@media (min-width: 480px) {
+}
+@media (min-width: 768px) {
+	.button-container {
+		flex-direction: row;
+		padding-top: 0;
+	}
+}
+@media (min-width: 992px) {
+	.button-container {
+		max-width: 900px;
+	}
 }
 button {
-	flex: 1;
 	display: inline-block;
-	min-width: 110px;
-	height: 100%;
-	margin: 0 3vh;
 	padding: 10px 20px;
 	color: black;
 	letter-spacing: 0.16em;
@@ -268,8 +317,26 @@ button {
 	font-size: 12px;
 	font-weight: bold;
 	background: white;
-	/* border: 1px solid black; */
 	border: 1px transparent;
+}
+@media (min-width: 480px) {
+	button {
+		stroke-width: 8px;
+	}
+}
+@media (min-width: 768px) {
+	button {
+		flex: 1;
+		height: 100%;
+		padding: 15px 20px;
+		margin: 0 2vh;
+	}
+}
+@media (min-width: 992px) {
+	button {
+		padding: 0 20px;
+		height: 8vh;
+	}
 }
 button:focus {
 	outline: none;
@@ -286,7 +353,7 @@ button:focus:after {
 	border: 1px solid #e2e2e2;
 }
 @media (min-width: 1080px) {
-	.button {
+	button {
 		font-size: 12px;
 	}
 }
@@ -295,14 +362,16 @@ button:hover {
 	background: black;
 	cursor: pointer;
 }
-button + button {
-	margin-left: calc(3vw * 1.5);
-}
 @media (min-width: 480px) {
 	button + button {
-		margin-left: 2em;
 	}
 }
+@media (min-width: 768px) {
+	button + button {
+		margin-left: calc(3vw * 1.5);
+	}
+}
+
 button.inactive,
 .inactive button {
 	opacity: 0.2;
@@ -322,12 +391,17 @@ button.inactive,
 	background: black;
 }
 .reset {
-	width: 20vw;
+	width: 100%;
 	height: 8vh;
 	margin: 2em 0 0;
 	position: relative;
 	left: 50%;
 	transform: translateX(-50%);
+}
+@media (min-width: 768px) {
+	.reset {
+		width: 20vw;
+	}
 }
 .reset:hover {
 	background: red;

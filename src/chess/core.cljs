@@ -169,41 +169,42 @@
       [game-status ^{:class "stats"} @game]]
      [:div.rook-three-lines {:on-click #(swap! game assoc :show-stats (not (@game :show-stats)))}
       (svg-of 'm "none")]
-     [:div.board {:class [turn
-                          (if (= (@game :result) :checkmate) "checkmate")
-                          current-winner
-                          (if (not-empty active-piece) "is-active")
-                          (if stopped-p "stopped-p")
-                          (if off-p "off-p")]}
-      (map-indexed
-       (fn [y row]
-         (map-indexed
-          (fn [x square]
-            (let [{:keys [color piece-type]} square
-                  is-state-rest-p (= state :rest)
-                  is-state-moving-p (= state :moving)
-                  is-current-color-turn-p (= turn color)
-                  can-activate-p (and is-state-rest-p is-current-color-turn-p)
-                  is-active-p (and (= (active-piece :x) x) (= (active-piece :y) y))]
-              [:div.square
-               {:key (str x y)
-                :class [(if (or (and (even? y) (odd? x)) (and (odd? y) (even? x))) "dark")
-                        (if can-activate-p "can-activate-p")
-                        (if is-active-p "active-p")
-                        (if (and (= king-x x) (= king-y y)) "in-check")]
-                :style {:grid-column (+ x 1) :grid-row (+ y 1)}
-                :on-click #(cond can-activate-p (activate-piece! square x y)
-                                 is-active-p (clear-active-piece!)
-                                 is-state-moving-p
-                                 (if (and (is-legal? active-piece x y board en-passant-target)
-                                          (not (in-check? (@game :turn) (board-after-move active-piece x y board) en-passant-target)))
-                                   (land-piece! active-piece x y)
-                                   (clear-active-piece!)))}
-               (if (not-empty square)
-                 [:span.piece-container
-                  {:class [color piece-type]} (svg-of piece-type color)])]))
-          row))
-       board)]
+     [:div.board-container
+      [:div.board {:class [turn
+                           (if (= (@game :result) :checkmate) "checkmate")
+                           current-winner
+                           (if (not-empty active-piece) "is-active")
+                           (if stopped-p "stopped-p")
+                           (if off-p "off-p")]}
+       (map-indexed
+        (fn [y row]
+          (map-indexed
+           (fn [x square]
+             (let [{:keys [color piece-type]} square
+                   is-state-rest-p (= state :rest)
+                   is-state-moving-p (= state :moving)
+                   is-current-color-turn-p (= turn color)
+                   can-activate-p (and is-state-rest-p is-current-color-turn-p)
+                   is-active-p (and (= (active-piece :x) x) (= (active-piece :y) y))]
+               [:div.square
+                {:key (str x y)
+                 :class [(if (or (and (even? y) (odd? x)) (and (odd? y) (even? x))) "dark")
+                         (if can-activate-p "can-activate-p")
+                         (if is-active-p "active-p")
+                         (if (and (= king-x x) (= king-y y)) "in-check")]
+                 :style {:grid-column (+ x 1) :grid-row (+ y 1)}
+                 :on-click #(cond can-activate-p (activate-piece! square x y)
+                                  is-active-p (clear-active-piece!)
+                                  is-state-moving-p
+                                  (if (and (is-legal? active-piece x y board en-passant-target)
+                                           (not (in-check? (@game :turn) (board-after-move active-piece x y board) en-passant-target)))
+                                    (land-piece! active-piece x y)
+                                    (clear-active-piece!)))}
+                (if (not-empty square)
+                  [:span.piece-container
+                   {:class [color piece-type]} (svg-of piece-type color)])]))
+           row))
+        board)]]
      (let [can-castle-kingside (can-castle-kingside? turn board castling in-check)
            can-castle-queenside (can-castle-queenside? turn board castling in-check)]
        [:div.button-container
