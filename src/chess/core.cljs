@@ -3,6 +3,7 @@
    [goog.dom :as gdom]
    [chess.svgs :refer [svg-of]]
    [chess.legal :refer [pawn-two-square-move-from-initial-rank? is-legal? in-check? any-possible-moves? can-castle? can-castle-queenside? can-castle-both-sides?]]
+   [chess.fen :refer [create-fen create-fen-board-state]]
    [chess.helpers :refer [board-after-move other-color]]
    [reagent.core :as reagent :refer [atom]]))
 
@@ -27,18 +28,26 @@
                          :turn nil
                          :in-check nil
                          :active-piece {}
-                         :board (generate-board)})
+                         :board (generate-board)
+                         :fen ""
+                         :fen-board-states []})
 
 (def game (atom game-initial-state))
 
+(defn update-fen! []
+  (let [fen-board-state (create-fen-board-state @game)
+        fen (create-fen @game)]
+    (swap! game assoc :fen fen)
+    (swap! game update :fen-board-states conj fen-board-state)))
+
 (defn reset-game! []
-  (do
-    (reset! game game-initial-state)))
+  (reset! game game-initial-state))
 
 (defn start! []
   (do
     (reset! game game-initial-state)
-    (swap! game assoc :state :rest :turn 'w :board (generate-board))))
+    (swap! game assoc :state :rest :turn 'w :board (generate-board))
+    (update-fen!)))
 
 (defn activate-piece! [square x y]
   (swap! game assoc :state :moving :active-piece
@@ -116,9 +125,10 @@
       (update-check!)
       (if (and (@game :in-check) (not (any-possible-moves? (other-color (active-piece :color)) (@game :board) (@game :en-passant-target))))
         (checkmate! (active-piece :color))
-        (change-turn!))))
+        (change-turn!))
+      (update-fen!)))
 
-(defn game-status [{:keys [active-piece castling current-winner draws in-check state turn draws], {:keys [w b]} :wins, {:keys [x y]} :en-passant-target} game]
+(defn game-status [{:keys [active-piece castling current-winner draws fen in-check state turn draws], {:keys [w b]} :wins, {:keys [x y]} :en-passant-target} game]
   [:div.game-status
    [:button {:on-click #(reset-game!)} "reset"]
    [:ul
@@ -133,7 +143,8 @@
     [:li "state: " state]
     [:li "turn: " turn]
     [:li "in-check: " in-check]
-    [:li "active-piece: " active-piece]]])
+    [:li "active-piece: " active-piece]
+    [:li "fen: " fen]]])
 
 (defn main []
   (let [{:keys [active-piece board castling current-winner en-passant-target in-check state turn]} @game
