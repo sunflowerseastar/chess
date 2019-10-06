@@ -140,7 +140,6 @@
 
 (defn game-status [{:keys [active-piece castling current-winner draws fen in-check state turn draws], {:keys [w b]} :wins, {:keys [x y]} :en-passant-target} game]
   [:div.game-status
-   [:button {:on-click #(reset-game!)} "reset"]
    [:ul
     [:li "wins:"
      [:ul [:li "white: " w] [:li "black: " b]]]
@@ -154,7 +153,8 @@
     [:li "turn: " turn]
     [:li "in-check: " in-check]
     [:li "active-piece: " active-piece]
-    [:li "fen: " fen]]])
+    [:li "fen: " fen]]
+   [:button {:class "white-bg" :on-click #(reset-game!)} "reset"]])
 
 (defn main []
   (let [{:keys [active-piece board castling current-winner en-passant-target in-check state threefold-repitition turn]} @game

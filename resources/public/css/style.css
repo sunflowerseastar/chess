@@ -13,25 +13,31 @@ body {
 	padding: 2em 1em;
 	box-sizing: border-box;
 }
-.chess.stats-showing > div {
-	opacity: 0.1;
-	filter: blur(2px);
-	pointer-events: none;
-	transition: all 1s cubic-bezier(0.3, 0.8, 0.1, 0.95);
-}
 
 .board {
+	position: relative;
 	align-self: center;
 	display: grid;
 	width: 90%;
-	max-width: 60vh;
-	margin: 1em 0;
+	max-width: 70vh;
+	margin: 1em auto;
 	grid-template-columns: repeat(8, 12.5%);
-	border: 2px solid;
 	transition: all 1s cubic-bezier(0.3, 0.8, 0.1, 0.95);
 }
-.board.off-p {
+.board:after {
+	content: '';
+	position: absolute;
+	top: -6px;
+	left: -6px;
+	right: -6px;
+	bottom: -6px;
+	border: 3px solid;
+	transition: all 6s cubic-bezier(0.3, 0.8, 0.1, 0.95);
+	pointer-events: none;
+}
+.board.off-p:after {
 	border-color: white;
+	transition: all 1s cubic-bezier(0.3, 0.8, 0.1, 0.95);
 }
 .square {
 	position: relative;
@@ -123,9 +129,31 @@ svg {
 }
 
 .rook-three-lines {
-	align-self: center;
-	width: 32px;
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 25px;
+	padding: 3vw 3.6vw;
 	cursor: pointer;
+	z-index: 2;
+}
+.rook-three-lines:hover {
+	background: black;
+}
+.rook-three-lines svg {
+	width: 100%;
+}
+.rook-three-lines:hover svg {
+	fill: white;
+}
+.chess.stats-showing .rook-three-lines svg {
+	fill: white;
+}
+.chess.stats-showing .rook-three-lines:hover {
+	background: white;
+}
+.chess.stats-showing .rook-three-lines:hover svg {
+	fill: black;
 }
 
 .stats {
@@ -138,23 +166,23 @@ svg {
 	padding: 0 2em;
 	opacity: 0;
 	pointer-events: none;
-	transition: all 1s cubic-bezier(0.3, 0.8, 0.1, 0.95);
 }
 .stats.active {
 	flex: 1;
 	opacity: 1 !important;
 	pointer-events: initial !important;
 	filter: blur(0) !important;
+	background: black;
 	z-index: 2;
 }
 .game-status {
 	flex: 1;
 	align-self: center;
-	max-width: 320px;
+	max-width: 600px;
+	min-height: 40vh;
 	margin: 0 auto;
 	padding: 1em 30px 1.4em 40px;
-	min-height: 16.5vh;
-	border: 1px solid #bbb;
+	color: white;
 }
 @media (min-width: 768px) {
 	.game-status {
@@ -162,23 +190,36 @@ svg {
 		margin-bottom: 0.8em;
 	}
 }
+.game-status ul {
+	padding-left: 5px;
+}
 .game-status li {
-	font-size: 11px;
+	font-size: 15px;
 	list-style: square;
 	text-align: left;
+	line-height: 1.8;
 }
 
 .button-container {
+	flex: 1;
 	align-self: center;
+	display: flex;
+	flex-direction: row;
+	padding: 5vh;
+	width: 100%;
 }
 button {
+	flex: 1;
 	display: inline-block;
 	min-width: 110px;
+	height: 100%;
+	margin: 0 5vh;
+	padding: 10px 20px;
 	color: white;
 	letter-spacing: 0.16em;
 	text-transform: uppercase;
-	font-size: 10px;
-	padding: 10px 20px;
+	font-size: 12px;
+	font-weight: bold;
 	background: black;
 	border: 1px solid black;
 }
@@ -224,6 +265,16 @@ button.inactive,
 }
 @media (hover: hover) {
 	.inactive button:hover {
+		color: white;
+		background: black;
+	}
+}
+.white-bg {
+	color: black;
+	background: white;
+}
+@media (hover: hover) {
+	.white-bg:hover {
 		color: white;
 		background: black;
 	}
