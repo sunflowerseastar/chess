@@ -35,7 +35,7 @@
           en-passant-capture-p true
           regular-move-p true
           two-square-move-from-initial-rank-p true
-          :else (do (println "DEBUG") false))))
+          :else false)))
 
 (defn is-legal-knight-move? [start-x start-y end-x end-y]
   (let [x-distance (get-distance start-x end-x)
@@ -108,13 +108,15 @@
         all-legal-moves-not-in-check (flatten (map #(map
                                                      (fn [[x y]]
                                                        (and (is-legal? % x y board en-passant-target)
-                                                            (not (in-check? 'b (board-after-move % x y board) en-passant-target))))
+                                                            (not (in-check? color (board-after-move % x y board) en-passant-target))))
                                                      all-squares)
                                                    pieces))]
     (some true? all-legal-moves-not-in-check)))
 
-(defn can-castle-queenside? [color board castling]
-  (let [y (if (= color 'w) 7 0)
+(defn can-castle-queenside? [color board castling in-check]
+  (let [not-in-check (not= in-check color)
+        has-not-castled (not (get-in castling [(keyword color) :has-castled]))
+        y (if (= color 'w) 7 0)
         is-king-in-place (= ((get-piece 4 y board) :piece-type) 'k)
         is-queenside-rook-in-place (= ((get-piece 0 y board) :piece-type) 'r)
         interim-xs (map #(get-piece % y board) [1 2 3])
@@ -126,10 +128,12 @@
         interims-not-in-check (and (not king-in-check-at-1) (not king-in-check-at-2) (not king-in-check-at-3))
         king-has-not-moved (not (get-in castling [(keyword color) :king-moved]))
         queenside-rook-has-not-moved (not (get-in castling [(keyword color) :queenside-rook-moved]))]
-    (and is-king-in-place is-queenside-rook-in-place king-has-not-moved queenside-rook-has-not-moved interim-xs-are-open interims-not-in-check)))
+    (and not-in-check has-not-castled is-king-in-place is-queenside-rook-in-place king-has-not-moved queenside-rook-has-not-moved interim-xs-are-open interims-not-in-check)))
 
-(defn can-castle-kingside? [color board castling]
-  (let [y (if (= color 'w) 7 0)
+(defn can-castle-kingside? [color board castling in-check]
+  (let [not-in-check (not= in-check color)
+        has-not-castled (not (get-in castling [(keyword color) :has-castled]))
+        y (if (= color 'w) 7 0)
         is-king-in-place (= ((get-piece 4 y board) :piece-type) 'k)
         is-kingside-rook-in-place (= ((get-piece 7 y board) :piece-type) 'r)
         interims (map #(get-piece % y board) [5 6])
@@ -140,14 +144,4 @@
         interims-not-in-check (and (not king-in-check-at-5) (not king-in-check-at-6))
         king-has-not-moved (not (get-in castling [(keyword color) :king-moved]))
         kingside-rook-has-not-moved (not (get-in castling [(keyword color) :kingside-rook-moved]))]
-    (and is-king-in-place is-kingside-rook-in-place king-has-not-moved kingside-rook-has-not-moved interims-are-open interims-not-in-check)))
-
-(defn can-castle? [color board castling in-check]
-  (let [not-in-check (not= in-check color)
-        has-not-castled (not (get-in castling [(keyword color) :has-castled]))]
-    (and not-in-check has-not-castled (or (can-castle-queenside? color board castling) (can-castle-kingside? color board castling)))))
-
-(defn can-castle-both-sides? [color board castling in-check]
-  (let [not-in-check (not= in-check color)
-        has-not-castled (not (get-in castling [(keyword color) :has-castled]))]
-    (and not-in-check has-not-castled (and (can-castle-queenside? color board castling) (can-castle-kingside? color board castling)))))
+    (and not-in-check has-not-castled is-king-in-place is-kingside-rook-in-place king-has-not-moved kingside-rook-has-not-moved interims-are-open interims-not-in-check)))

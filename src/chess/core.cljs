@@ -2,7 +2,7 @@
   (:require
    [goog.dom :as gdom]
    [chess.svgs :refer [svg-of]]
-   [chess.legal :refer [pawn-two-square-move-from-initial-rank? is-legal? in-check? any-possible-moves? can-castle? can-castle-queenside? can-castle-both-sides?]]
+   [chess.legal :refer [pawn-two-square-move-from-initial-rank? is-legal? in-check? any-possible-moves? can-castle-kingside? can-castle-queenside?]]
    [chess.fen :refer [create-fen create-fen-board-state]]
    [chess.helpers :refer [board-after-move other-color]]
    [reagent.core :as reagent :refer [atom]]))
@@ -25,6 +25,7 @@
                          :current-winner nil
                          :show-stats false
                          :state :stopped
+                         :result nil
                          :turn nil
                          :in-check nil
                          :active-piece {}
@@ -99,8 +100,8 @@
       (change-turn!))))
 
 (defn castle! []
-  (let [{:keys [turn board castling]} @game]
-    (if (can-castle-queenside? turn board castling) (castle-queenside!) (castle-kingside!))))
+  (let [{:keys [turn board castling in-check]} @game]
+    (if (can-castle-queenside? turn board castling in-check) (castle-queenside!) (castle-kingside!))))
 
 (defn update-castling! [active-piece end-x end-y]
   (let [turn (@game :turn) {:keys [color piece-type x]} active-piece]
@@ -121,10 +122,10 @@
 (defn checkmate! [color]
   (let [win-color (if (= color 'w) :w :b)]
     (do (swap! game assoc-in [:wins win-color] (inc (-> @game :wins win-color)) :current-winner color)
-        (swap! game assoc :current-winner color :state :stopped :turn nil))))
+        (swap! game assoc :current-winner color :result :checkmate :state :stopped :turn nil))))
 
 (defn draw! []
-  (swap! game assoc :draws (inc (@game :draws)) :current-winner "draw" :state :stopped :turn nil :threefold-repitition false))
+  (swap! game assoc :draws (inc (@game :draws)) :current-winner "draw" :result :draw :state :stopped :turn nil :threefold-repitition false))
 
 (defn land-piece! [active-piece end-x end-y]
   (do (update-board! active-piece end-x end-y)
@@ -154,10 +155,10 @@
     [:li "in-check: " in-check]
     [:li "active-piece: " active-piece]
     [:li "fen: " fen]]
-   [:button {:class "white-bg" :on-click #(reset-game!)} "reset"]])
+   [:button {:class "white-bg reset" :on-click #(reset-game!)} "reset"]])
 
 (defn main []
-  (let [{:keys [active-piece board castling current-winner en-passant-target in-check state threefold-repitition turn]} @game
+  (let [{:keys [active-piece board castling current-winner en-passant-target in-check state result threefold-repitition turn]} @game
         stopped-p (= state :stopped)
         off-p (and (= state :stopped) (nil? current-winner))
         {king-x :x, king-y :y, :or {king-x -1 king-y -1}}
@@ -167,8 +168,11 @@
                   :on-click #(swap! game assoc :show-stats (not (@game :show-stats)))}
       [game-status ^{:class "stats"} @game]]
      [:div.rook-three-lines {:on-click #(swap! game assoc :show-stats (not (@game :show-stats)))}
-      (svg-of 'm)]
-     [:div.board {:class [(if (not-empty active-piece) "is-active")
+      (svg-of 'm "none")]
+     [:div.board {:class [turn
+                          (if (= (@game :result) :checkmate) "checkmate")
+                          current-winner
+                          (if (not-empty active-piece) "is-active")
                           (if stopped-p "stopped-p")
                           (if off-p "off-p")]}
       (map-indexed
@@ -197,18 +201,16 @@
                                    (clear-active-piece!)))}
                (if (not-empty square)
                  [:span.piece-container
-                  {:class [color piece-type]} (svg-of piece-type)])]))
+                  {:class [color piece-type]} (svg-of piece-type color)])]))
           row))
        board)]
-     (let [can-castle-both-sides (can-castle-both-sides? turn board castling in-check)
-           can-castle-p (can-castle? turn board castling in-check)]
+     (let [can-castle-kingside (can-castle-kingside? turn board castling in-check)
+           can-castle-queenside (can-castle-queenside? turn board castling in-check)]
        [:div.button-container
         [:button {:class (if (not stopped-p) "inactive") :on-click #(start!)} "start"]
-        [:button {:class (if (not threefold-repitition) "inactive") :on-click #(draw!)} "draw"]
-        (if can-castle-both-sides [:<>
-                                   [:button {:on-click #(castle-queenside!)} "castle queenside"]
-                                   [:button {:on-click #(castle-kingside!)} "castle kingside"]]
-            [:button {:class (if (not can-castle-p) "inactive") :on-click #(castle!)} "castle"])])]))
+        [:button {:class (if (not can-castle-queenside) "inactive") :on-click #(castle-queenside!)} "castle Q"]
+        [:button {:class (if (not can-castle-kingside) "inactive") :on-click #(castle-kingside!)} "castle K"]
+        [:button {:class (if (not threefold-repitition) "inactive") :on-click #(draw!)} "draw"]])]))
 
 (defn get-app-element []
   (gdom/getElement "app"))

@@ -1,6 +1,6 @@
 (ns chess.fen
   (:require
-   [chess.legal :refer [pawn-two-square-move-from-initial-rank? is-legal? in-check? any-possible-moves? can-castle? can-castle-queenside?]]))
+   [chess.legal :refer [pawn-two-square-move-from-initial-rank? is-legal? in-check? any-possible-moves? can-castle-queenside?]]))
 
 (defn combine-strings-with-slashes [ss]
   (loop [ss ss result "" first-iteration true]
@@ -42,5 +42,4 @@
   (let [fen-board-state (create-fen-board-state game)
         half-move-clock 5
         full-move-clock 2]
-    (do (println fen-rank)
-        (str fen-board-state " " half-move-clock " " full-move-clock))))
+    (str fen-board-state " " half-move-clock " " full-move-clock)))

@@ -19,10 +19,41 @@ body {
 	align-self: center;
 	display: grid;
 	width: 90%;
-	max-width: 70vh;
+	max-width: 72vh;
 	margin: 1em auto;
 	grid-template-columns: repeat(8, 12.5%);
 	transition: all 1s cubic-bezier(0.3, 0.8, 0.1, 0.95);
+}
+.board:before,
+.board:before {
+	transition: opacity 1s linear;
+  border-top: 1px transparent;
+  border-bottom: 1px transparent;
+  opacity: 0;
+}
+.board.b:before,
+.board.w:before {
+	content: '';
+	position: absolute;
+	left: -6px;
+	right: -6px;
+  opacity: 1;
+}
+.board.w:before {
+	bottom: -10px;
+	border-bottom: 1px solid black;
+}
+.board.b:before {
+	top: -10px;
+	border-top: 1px solid black;
+}
+.board.checkmate.b:before {
+	top: -15px;
+	border-top: 5px solid #00ff7c;
+}
+.board.checkmate.w:before {
+	bottom: -15px;
+	border-bottom: 5px solid #00ff7c;
 }
 .board:after {
 	content: '';
@@ -107,25 +138,40 @@ svg {
 .off-p svg {
 	opacity: 0;
 }
-.w svg {
+svg.w {
 	fill: white;
 	stroke: black;
 	stroke-width: 10px;
 	stroke-linejoin: round;
 }
 @media (min-width: 480px) {
-	.w svg {
+	svg.w {
 		stroke-width: 8px;
 	}
 }
 @media (min-width: 768px) {
-	.w svg {
+	svg.w {
 		stroke-width: 7px;
 	}
 }
+.checkmate .square.in-check:before {
+	background: repeating-linear-gradient(
+		-45deg,
+		#f00,
+		#f00 1px,
+		#fff 1px,
+		#fff 5px
+	);
+}
+.checkmate .square:after {
+  border-color: transparent;
+}
 .square.in-check:after {
-	border: 3px solid red;
+	border: 3px solid yellow;
 	opacity: 1;
+}
+.checkmate .square.in-check:after {
+	border-color: transparent;
 }
 
 .rook-three-lines {
@@ -191,7 +237,7 @@ svg {
 	}
 }
 .game-status ul {
-	padding-left: 5px;
+	padding-left: 15px;
 }
 .game-status li {
 	font-size: 15px;
@@ -201,11 +247,12 @@ svg {
 }
 
 .button-container {
+	box-sizing: border-box;
 	flex: 1;
 	align-self: center;
 	display: flex;
 	flex-direction: row;
-	padding: 5vh;
+	padding: 3vh;
 	width: 100%;
 }
 button {
@@ -213,15 +260,16 @@ button {
 	display: inline-block;
 	min-width: 110px;
 	height: 100%;
-	margin: 0 5vh;
+	margin: 0 3vh;
 	padding: 10px 20px;
-	color: white;
+	color: black;
 	letter-spacing: 0.16em;
 	text-transform: uppercase;
 	font-size: 12px;
 	font-weight: bold;
-	background: black;
-	border: 1px solid black;
+	background: white;
+	/* border: 1px solid black; */
+	border: 1px transparent;
 }
 button:focus {
 	outline: none;
@@ -242,12 +290,10 @@ button:focus:after {
 		font-size: 12px;
 	}
 }
-@media (hover: hover) {
-	button:hover {
-		color: black;
-		background: white;
-		cursor: pointer;
-	}
+button:hover {
+	color: white;
+	background: black;
+	cursor: pointer;
 }
 button + button {
 	margin-left: calc(3vw * 1.5);
@@ -263,19 +309,26 @@ button.inactive,
 	cursor: default;
 	pointer-events: none;
 }
-@media (hover: hover) {
-	.inactive button:hover {
-		color: white;
-		background: black;
-	}
+.inactive button:hover {
+	color: white;
+	background: black;
 }
 .white-bg {
 	color: black;
 	background: white;
 }
-@media (hover: hover) {
-	.white-bg:hover {
-		color: white;
-		background: black;
-	}
+.white-bg:hover {
+	color: white;
+	background: black;
+}
+.reset {
+	width: 20vw;
+	height: 8vh;
+	margin: 2em 0 0;
+	position: relative;
+	left: 50%;
+	transform: translateX(-50%);
+}
+.reset:hover {
+	background: red;
 }
