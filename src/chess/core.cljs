@@ -29,6 +29,7 @@
                          :in-check nil
                          :active-piece {}
                          :board (generate-board)
+                         :threefold-repitition false
                          :fen ""
                          :fen-board-states []})
 
@@ -39,6 +40,11 @@
         fen (create-fen @game)]
     (swap! game assoc :fen fen)
     (swap! game update :fen-board-states conj fen-board-state)))
+
+(defn update-draw! []
+  (let [fbs (@game :fen-board-states)
+        threefold-repitition (> (count (filter #(= % (last fbs)) fbs)) 2)]
+    (if threefold-repitition (swap! game assoc :threefold-repitition true))))
 
 (defn reset-game! []
   (reset! game game-initial-state))
@@ -117,6 +123,9 @@
     (do (swap! game assoc-in [:wins win-color] (inc (-> @game :wins win-color)) :current-winner color)
         (swap! game assoc :current-winner color :state :stopped :turn nil))))
 
+(defn draw! []
+  (swap! game assoc :draws (inc (@game :draws)) :current-winner "draw" :state :stopped :turn nil :threefold-repitition false))
+
 (defn land-piece! [active-piece end-x end-y]
   (do (update-board! active-piece end-x end-y)
       (clear-active-piece!)
@@ -126,7 +135,8 @@
       (if (and (@game :in-check) (not (any-possible-moves? (other-color (active-piece :color)) (@game :board) (@game :en-passant-target))))
         (checkmate! (active-piece :color))
         (change-turn!))
-      (update-fen!)))
+      (update-fen!)
+      (update-draw!)))
 
 (defn game-status [{:keys [active-piece castling current-winner draws fen in-check state turn draws], {:keys [w b]} :wins, {:keys [x y]} :en-passant-target} game]
   [:div.game-status
@@ -147,7 +157,7 @@
     [:li "fen: " fen]]])
 
 (defn main []
-  (let [{:keys [active-piece board castling current-winner en-passant-target in-check state turn]} @game
+  (let [{:keys [active-piece board castling current-winner en-passant-target in-check state threefold-repitition turn]} @game
         stopped-p (= state :stopped)
         off-p (and (= state :stopped) (nil? current-winner))
         {king-x :x, king-y :y, :or {king-x -1 king-y -1}}
@@ -194,6 +204,7 @@
            can-castle-p (can-castle? turn board castling in-check)]
        [:div.button-container
         [:button {:class (if (not stopped-p) "inactive") :on-click #(start!)} "start"]
+        [:button {:class (if (not threefold-repitition) "inactive") :on-click #(draw!)} "draw"]
         (if can-castle-both-sides [:<>
                                    [:button {:on-click #(castle-queenside!)} "castle queenside"]
                                    [:button {:on-click #(castle-kingside!)} "castle kingside"]]
