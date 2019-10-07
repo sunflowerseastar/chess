@@ -2,6 +2,18 @@
   (:require
    [chess.legal :refer [pawn-two-square-move-from-initial-rank? is-legal? in-check? any-possible-moves? can-castle-queenside?]]))
 
+(defn str->fen-position-str [xs]
+  (loop [xs xs
+         previous nil
+         acc ""
+         counter 1]
+    (let [x (first xs)]
+      (cond
+        (nil? x) (str acc (if (= previous "-") counter previous))
+        (nil? previous) (recur (rest xs) x acc counter)
+        (and (= x previous) (= x "-")) (recur (rest xs) x acc (inc counter))
+        :else (recur (rest xs) x (str acc (if (= previous "-") counter previous)) 1)))))
+
 (defn combine-strings-with-slashes [ss]
   (loop [ss ss result "" first-iteration true]
     (if ss
@@ -12,7 +24,8 @@
 (defn board->fen-rank [board]
   (letfn [(rank-of-pieces->fen-rank [rank]
             (->> rank (map #(or (% :piece-type) "-"))
-                 (reduce str)))]
+                 (reduce str)
+                 (str->fen-position-str)))]
     (combine-strings-with-slashes (for [rank board] (rank-of-pieces->fen-rank rank)))))
 
 (defn castling->fen-castling [{:keys [w b]}]
