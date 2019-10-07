@@ -13,6 +13,9 @@ body {
 	padding: 48px 1em 1em;
 	box-sizing: border-box;
 }
+.chess.is-info-page-showing {
+	background: black;
+}
 
 .board-container {
 	flex: 1;
@@ -214,51 +217,29 @@ svg.w {
 .rook-three-lines:hover svg {
 	fill: white;
 }
-.chess.stats-showing .rook-three-lines svg {
+.chess.is-info-page-showing .rook-three-lines svg {
 	fill: white;
 }
-.chess.stats-showing .rook-three-lines:hover {
+.chess.is-info-page-showing .rook-three-lines:hover {
 	background: white;
 }
-.chess.stats-showing .rook-three-lines:hover svg {
+.chess.is-info-page-showing .rook-three-lines:hover svg {
 	fill: black;
 }
 
-.stats {
-	position: absolute;
-	top: 0;
-	bottom: 0;
-	left: 0;
-	right: 0;
-	display: flex;
-	padding: 0 2em;
-	opacity: 0;
-	pointer-events: none;
-}
-.stats.active {
-	flex: 1;
-	opacity: 1 !important;
-	pointer-events: initial !important;
-	filter: blur(0) !important;
-	background: black;
-	z-index: 2;
-}
 .game-status {
-	flex: 1;
+	position: relative;
 	align-self: center;
-	max-width: 600px;
-	min-height: 40vh;
+	width: 100%;
+	max-width: 54vh;
 	margin: 0 auto;
 	color: white;
+	/* border: 1px solid magenta; */
 }
-@media (min-width: 480px) {
-	.game-status {
-		stroke-width: 8px;
-	}
-}
+
 @media (min-width: 768px) {
 	.game-status {
-		margin-bottom: 0.8em;
+		flex: 1;
 	}
 }
 .game-status ul {
