@@ -119,6 +119,12 @@
                                      (reset-en-passant!))
             :else (reset-en-passant!)))))
 
+(defn update-promotion! [active-piece end-x end-y]
+  (let [color (@game :turn)
+        is-pawn (= (active-piece :piece-type) 'p)
+        pawn-reached-end (and is-pawn (= end-y (if (= color 'w) 0 7)))]
+    (if pawn-reached-end (swap! game assoc-in [:board end-y end-x] {:piece-type 'q :color color :x end-x :y end-y}))))
+
 (defn checkmate! [color]
   (let [win-color (if (= color 'w) :w :b)]
     (do (swap! game assoc-in [:wins win-color] (inc (-> @game :wins win-color)) :current-winner color)
@@ -132,6 +138,7 @@
       (clear-active-piece!)
       (update-en-passant! active-piece end-x end-y)
       (update-castling! active-piece end-x end-y)
+      (update-promotion! active-piece end-x end-y)
       (update-check!)
       (if (and (@game :in-check) (not (any-possible-moves? (other-color (active-piece :color)) (@game :board) (@game :en-passant-target))))
         (checkmate! (active-piece :color))
