@@ -104,9 +104,7 @@
         en-passant-algebraic (en-passant-target->fen-en-passant en-passant-target)
         half-move-clock 5
         full-move-clock 2]
-    (do
-      ;; (println "cfbs" fen-rank)
-      (str fen-rank " " turn " " fen-castling " " en-passant-algebraic))))
+    (str fen-rank " " turn " " fen-castling " " en-passant-algebraic)))
 
 (defn create-fen [game]
   (let [fen-board-state (create-fen-board-state game)

@@ -51,6 +51,10 @@ body {
 }
 .board:before,
 .board:before {
+	content: '';
+	position: absolute;
+	left: -6px;
+	right: -6px;
 	transition: opacity 1s linear;
 	border-top: 1px transparent;
 	border-bottom: 1px transparent;
@@ -58,10 +62,6 @@ body {
 }
 .board.b:before,
 .board.w:before {
-	content: '';
-	position: absolute;
-	left: -6px;
-	right: -6px;
 	opacity: 1;
 }
 .board.w:before {
@@ -79,6 +79,13 @@ body {
 .board.checkmate.w:before {
 	bottom: -15px;
 	border-bottom: 5px solid #00ff7c;
+}
+.board.draw:before {
+	top: -15px;
+	bottom: -15px;
+	border-top: 5px solid #6600ff;
+	border-bottom: 5px solid #6600ff;
+	opacity: 1;
 }
 .board:after {
 	content: '';
@@ -231,7 +238,7 @@ svg.w {
 	position: relative;
 	align-self: center;
 	width: 100%;
-	max-width: 54vh;
+	max-width: 800px;
 	margin: 0 auto;
 	color: white;
 	/* border: 1px solid magenta; */
@@ -270,6 +277,7 @@ svg.w {
 .info-page form input {
   display: block;
   width: 90%;
+  max-width: 400px;
   margin: 1em 0;
 }
 

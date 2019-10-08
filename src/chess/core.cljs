@@ -76,7 +76,6 @@
         en-passant-target (fen->en-passant-target fen)
         board (fen->fen-positions fen)]
     (do
-      (println "sgtf! ")
       (swap! game assoc :state :rest :turn turn :castling castling :en-passant-target en-passant-target :board board)
       (update-check!)
       (let [w-no-possible-moves (not (any-possible-moves? 'w (@game :board) (@game :en-passant-target)))
@@ -177,7 +176,7 @@
          [:input {:type :text :name :fen
                   :value (:fen @form-state)
                   :on-change #(swap! form-state assoc :fen (-> % .-target .-value))}]
-         [:button {:type :submit} "submit"]]))))
+         [:button {:type :submit} "update board"]]))))
 
 (defn main []
   (let [{:keys [active-piece board castling current-winner draws en-passant-target fen in-check state result threefold-repitition turn], {:keys [w b]} :wins, {:keys [x y]} :en-passant-target} @game
@@ -200,6 +199,7 @@
                                                          [:li "current-winner: " current-winner]
                                                          [:li "state: " state]
                                                          [:li "turn: " turn]
+                                                         [:li "result: " result]
                                                          [:li "in-check: " in-check]
                                                          [:li "active-piece: " active-piece]
                                                          [:li "fen: " fen]
@@ -235,10 +235,8 @@
                                         (land-piece! active-piece x y)
                                         (clear-active-piece!)))}
                     (if (not-empty square)
-                      (do
-                        ;; (println "piece-container " square)
-                        [:span.piece-container
-                         {:class [color piece-type]} (svg-of piece-type color)]))]))
+                      [:span.piece-container
+                       {:class [color piece-type]} (svg-of piece-type color)])]))
                row))
             board)])]
      (let [can-castle-kingside (can-castle-kingside? turn board castling in-check)
