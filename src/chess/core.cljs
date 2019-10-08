@@ -57,6 +57,19 @@
     (swap! game assoc :state :rest :turn 'w :board (generate-board))
     (update-fen!)))
 
+(defn update-check! []
+  (if (in-check? (other-color (@game :turn)) (@game :board) (@game :en-passant-target))
+    (swap! game assoc :in-check (other-color (@game :turn)))
+    (swap! game assoc :in-check nil)))
+
+(defn checkmate! [color]
+  (let [win-color (if (= color 'w) :w :b)]
+    (do (swap! game assoc-in [:wins win-color] (inc (-> @game :wins win-color)) :current-winner color)
+        (swap! game assoc :current-winner color :result :checkmate :state :stopped :turn nil))))
+
+(defn draw! []
+  (swap! game assoc :draws (inc (@game :draws)) :current-winner "draw" :result :draw :state :stopped :turn nil :threefold-repitition false))
+
 (defn set-game-to-fen! [fen]
   (let [turn (symbol (nth (split fen #" ") 1))
         castling (fen->castling fen)
@@ -65,6 +78,13 @@
     (do
       (println "sgtf! ")
       (swap! game assoc :state :rest :turn turn :castling castling :en-passant-target en-passant-target :board board)
+      (update-check!)
+      (let [w-no-possible-moves (not (any-possible-moves? 'w (@game :board) (@game :en-passant-target)))
+            b-no-possible-moves (not (any-possible-moves? 'b (@game :board) (@game :en-passant-target)))
+            current-turn-no-possible-moves (if (= turn 'w) w-no-possible-moves b-no-possible-moves)]
+        (cond (and (= (@game :in-check) 'w) w-no-possible-moves) (checkmate! 'b)
+              (and (= (@game :in-check) 'b) b-no-possible-moves) (checkmate! 'w)
+              current-turn-no-possible-moves (draw!)))
       (update-fen!))))
 
 (defn activate-piece! [square x y]
@@ -82,11 +102,6 @@
 
 (defn change-turn! []
   (swap! game assoc :turn (other-color (@game :turn))))
-
-(defn update-check! []
-  (if (in-check? (other-color (@game :turn)) (@game :board) (@game :en-passant-target))
-    (swap! game assoc :in-check (other-color (@game :turn)))
-    (swap! game assoc :in-check nil)))
 
 (defn castle-queenside! []
   (let [{:keys [turn board castling]} @game
@@ -136,14 +151,6 @@
         pawn-reached-end (and is-pawn (= end-y (if (= color 'w) 0 7)))]
     (if pawn-reached-end (swap! game assoc-in [:board end-y end-x] {:piece-type 'q :color color :x end-x :y end-y}))))
 
-(defn checkmate! [color]
-  (let [win-color (if (= color 'w) :w :b)]
-    (do (swap! game assoc-in [:wins win-color] (inc (-> @game :wins win-color)) :current-winner color)
-        (swap! game assoc :current-winner color :result :checkmate :state :stopped :turn nil))))
-
-(defn draw! []
-  (swap! game assoc :draws (inc (@game :draws)) :current-winner "draw" :result :draw :state :stopped :turn nil :threefold-repitition false))
-
 (defn land-piece! [active-piece end-x end-y]
   (do (update-board! active-piece end-x end-y)
       (clear-active-piece!)
@@ -151,9 +158,10 @@
       (update-castling! active-piece end-x end-y)
       (update-promotion! active-piece end-x end-y)
       (update-check!)
-      (if (and (@game :in-check) (not (any-possible-moves? (other-color (active-piece :color)) (@game :board) (@game :en-passant-target))))
-        (checkmate! (active-piece :color))
-        (change-turn!))
+      (let [no-possible-moves (not (any-possible-moves? (other-color (active-piece :color)) (@game :board) (@game :en-passant-target)))]
+        (cond (and (@game :in-check) no-possible-moves) (checkmate! (active-piece :color))
+              no-possible-moves (draw!)
+              :else (change-turn!)))
       (update-fen!)
       (update-draw!)))
 
