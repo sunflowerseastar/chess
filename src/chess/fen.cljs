@@ -1,6 +1,22 @@
 (ns chess.fen
   (:require
+   [chess.helpers :refer [is-lower-case-p]]
    [chess.legal :refer [pawn-two-square-move-from-initial-rank? is-legal? in-check? any-possible-moves? can-castle-queenside?]]))
+
+(defn is-fen-valid? [fen] true)
+
+(defn expand-fen-positions [fen-positions]
+  (reduce str (flatten (map #(if (> % 0) (repeat % '-) %) fen-positions))))
+
+(defn fen-positions->board [fen-positions]
+  (let [expanded-positions (expand-fen-positions fen-positions)
+        split-positions (clojure.string/split expanded-positions #"/")]
+    (vec (map-indexed (fn [y row]
+                        (vec (map-indexed (fn [x square]
+                                            (if (= square "-") {}
+                                                (hash-map :color (if (is-lower-case-p square) 'b 'w)
+                                                          :piece-type square :x x :y y))) row)))
+                      split-positions))))
 
 (defn str->fen-position-str [xs]
   (loop [xs xs

@@ -3,7 +3,7 @@
    [goog.dom :as gdom]
    [chess.svgs :refer [svg-of]]
    [chess.legal :refer [pawn-two-square-move-from-initial-rank? is-legal? in-check? any-possible-moves? can-castle-kingside? can-castle-queenside?]]
-   [chess.fen :refer [create-fen create-fen-board-state]]
+   [chess.fen :refer [is-fen-valid? create-fen create-fen-board-state fen-positions->board]]
    [chess.helpers :refer [board-after-move other-color]]
    [reagent.core :as reagent :refer [atom]]))
 
@@ -151,6 +151,22 @@
 
    [:div.button-container [:button {:class "white-bg reset" :on-click #(reset-game!)} "reset"]]])
 
+(defn contact-form [fen]
+  (let [s (reagent/atom {:fen fen})]
+    (fn []
+      [:form {:on-submit (fn [e]
+                           (.preventDefault e)
+                           (let [fen (@s :fen)]
+                             (do (println "submit " fen)
+                                 (if (is-fen-valid? fen)
+                                   (swap! game assoc :fen fen)
+                                   ))))}
+       [:input {:type :text :name :fen
+                :value (:fen @s)
+                :on-change (fn [e]
+                             (do (println "input first " (-> e .-target .-value) @s) (swap! s assoc :fen (-> e .-target .-value))))}]
+       [:button {:type :submit} "submit"]])))
+
 (defn main []
   (let [{:keys [active-piece board castling current-winner draws en-passant-target fen in-check state result threefold-repitition turn], {:keys [w b]} :wins, {:keys [x y]} :en-passant-target} @game
         stopped-p (= state :stopped)
@@ -174,13 +190,16 @@
                                                            [:li "turn: " turn]
                                                            [:li "in-check: " in-check]
                                                            [:li "active-piece: " active-piece]
-                                                           [:li "fen: " fen]]]
+                                                           [:li "fen: " fen]
+                                                           [contact-form "abc"]
+                                                           ]]
           [:div.board {:class [turn
                                (if (= (@game :result) :checkmate) "checkmate")
                                current-winner
                                (if (not-empty active-piece) "is-active")
                                (if stopped-p "stopped-p")
                                (if off-p "off-p")]}
+           ;; [contact-form fen]
            (map-indexed
             (fn [y row]
               (map-indexed
