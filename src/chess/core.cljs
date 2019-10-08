@@ -40,8 +40,10 @@
 (defn update-fen! []
   (let [fen-board-state (create-fen-board-state @game)
         fen (create-fen @game)]
-    (swap! game assoc :fen fen)
-    (swap! game update :fen-board-states conj fen-board-state)))
+    (println "skip update-fen!")
+    ;; (swap! game assoc :fen fen)
+    ;; (swap! game update :fen-board-states conj fen-board-state)
+    ))
 
 (defn update-draw! []
   (let [fbs (@game :fen-board-states)
@@ -62,11 +64,14 @@
         turn (symbol (nth (split fen #" ") 1))
         castling (fen->castling fen)]
     (do
-      (println "sgtf! " board turn castling)
+      (println "sgtf! board " board)
+      (println "sgtf! gen " (generate-board))
       (reset! game game-initial-state)
       (do (println "me " (count board))
           (println "gen " (count (generate-board)))
-          (swap! game assoc :state :rest :turn turn :castling castling :board board))
+          (println "same? " (= board (generate-board)))
+          ;; (swap! game assoc :state :rest :turn turn :castling castling :board (generate-board)))
+      (swap! game assoc :state :rest :turn turn :castling castling :board board))
       (update-fen!))))
 
 (defn activate-piece! [square x y]
@@ -185,7 +190,7 @@
      [:div.rook-three-lines {:on-click #(swap! game assoc :is-info-page-showing (not (@game :is-info-page-showing)))}
       (svg-of 'm "none")]
      [:div.board-container
-      (if (@game :is-info-page-showing) [:div.game-status [:ul
+      (if (@game :is-info-page-showing) [:div.info-page [:ul
                                                            [:li "wins:"
                                                             [:ul [:li "white: " w] [:li "black: " b]]]
                                                            [:li "castle availability:"
@@ -199,8 +204,7 @@
                                                            [:li "in-check: " in-check]
                                                            [:li "active-piece: " active-piece]
                                                            [:li "fen: " fen]
-                                                           [fen-form "abc"]
-                                                           ]]
+                                                           [fen-form "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"]]]
           [:div.board {:class [turn
                                (if (= (@game :result) :checkmate) "checkmate")
                                current-winner

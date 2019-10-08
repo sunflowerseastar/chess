@@ -227,7 +227,7 @@ svg.w {
 	fill: black;
 }
 
-.game-status {
+.info-page {
 	position: relative;
 	align-self: center;
 	width: 100%;
@@ -238,34 +238,39 @@ svg.w {
 }
 
 @media (min-width: 768px) {
-	.game-status {
+	.info-page {
 		flex: 1;
 	}
 }
-.game-status ul {
+.info-page ul {
 	padding-left: 15px;
 }
 
-.game-status li {
+.info-page li {
 	font-size: 9px;
 	list-style: square;
 	text-align: left;
 	line-height: 1.8;
 }
 @media (min-width: 480px) {
-	.game-status li {
+	.info-page li {
 		font-size: 11px;
 	}
 }
 @media (min-width: 768px) {
-	.game-status li {
+	.info-page li {
 		font-size: 13px;
 	}
 }
 @media (min-width: 992px) {
-	.game-status li {
+	.info-page li {
 		font-size: 14px;
 	}
+}
+.info-page form input {
+  display: block;
+  width: 90%;
+  margin: 1em 0;
 }
 
 .button-container {

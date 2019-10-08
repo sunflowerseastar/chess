@@ -17,12 +17,15 @@
                                                      (cond (= square "-") {}
                                                            (re-find #"\d" square) (repeat square {})
                                                            :else (hash-map :color (if (is-lower-case-p square) 'b 'w)
-                                                                           :piece-type (lower-case square) :x x :y y)))
+                                                                           :piece-type (symbol (lower-case square)) :x x :y y)))
                                                    row))))
                       split-positions))))
 
 (defn fen->fen-positions [fen]
-  (do (println "f->f-p " (-> fen (split #" ")) (-> fen (split #" ") (nth 0)) (-> fen (split #" ") (nth 0) fen-positions->board))
+  (do
+    (println "f->f-p "
+             ;; (-> fen (split #" ")) (-> fen (split #" ") (nth 0)) (-> fen (split #" ") (nth 0) fen-positions->board)
+             )
       (-> fen (split #" ") (nth 0) fen-positions->board)))
 
 (defn fen->castling [fen]
@@ -65,10 +68,13 @@
 
 (defn board->fen-rank [board]
   (letfn [(rank-of-pieces->fen-rank [rank]
-            (->> rank (map #(or (% :piece-type) "-"))
+            (->> rank (map #(if (% :piece-type) "-" (if (= (% :color) 'w) upper-case %)))
                  (reduce str)
                  (str->fen-position-str)))]
-    (combine-strings-with-slashes (for [rank board] (rank-of-pieces->fen-rank rank)))))
+    (combine-strings-with-slashes (for [rank board]
+                                    (do
+                                      ;; (println "for " rank (rank-of-pieces->fen-rank rank))
+                                      (rank-of-pieces->fen-rank rank))))))
 
 (defn castling->fen-castling [{:keys [w b]}]
   (let [K (if (and (not (w :has-castled)) (not (w :king-moved)) (not (w :kingside-rook-moved))) 'K)
@@ -90,7 +96,7 @@
         en-passant-algebraic (en-passant-target->en-passant-algebraic en-passant-target)
         half-move-clock 5
         full-move-clock 2]
-    (do (println fen-rank)
+    (do (println "cfbs" board fen-rank)
         (str fen-rank " " turn " " fen-castling " " en-passant-algebraic))))
 
 (defn create-fen [game]
