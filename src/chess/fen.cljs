@@ -1,5 +1,6 @@
 (ns chess.fen
   (:require
+   [clojure.string :refer [index-of lower-case split upper-case]]
    [chess.helpers :refer [is-lower-case-p]]
    [chess.legal :refer [pawn-two-square-move-from-initial-rank? is-legal? in-check? any-possible-moves? can-castle-queenside?]]))
 
@@ -10,13 +11,38 @@
 
 (defn fen-positions->board [fen-positions]
   (let [expanded-positions (expand-fen-positions fen-positions)
-        split-positions (clojure.string/split expanded-positions #"/")]
+        split-positions (split expanded-positions #"/")]
     (vec (map-indexed (fn [y row]
-                        (vec (map-indexed (fn [x square]
-                                            (if (= square "-") {}
-                                                (hash-map :color (if (is-lower-case-p square) 'b 'w)
-                                                          :piece-type square :x x :y y))) row)))
+                        (vec (flatten (map-indexed (fn [x square]
+                                                     (cond (= square "-") {}
+                                                           (re-find #"\d" square) (repeat square {})
+                                                           :else (hash-map :color (if (is-lower-case-p square) 'b 'w)
+                                                                           :piece-type (lower-case square) :x x :y y)))
+                                                   row))))
                       split-positions))))
+
+(defn fen->fen-positions [fen]
+  (do (println "f->f-p " (-> fen (split #" ")) (-> fen (split #" ") (nth 0)) (-> fen (split #" ") (nth 0) fen-positions->board))
+      (-> fen (split #" ") (nth 0) fen-positions->board)))
+
+(defn fen->castling [fen]
+  (let [fen-castle (nth (split fen #" ") 2)
+        K (boolean (index-of fen-castle "K"))
+        Q (boolean (index-of fen-castle "Q"))
+        k (boolean (index-of fen-castle "k"))
+        q (boolean (index-of fen-castle "q"))
+        w-queenside-rook-moved (not Q)
+        w-kingside-rook-moved (not K)
+        w-king-moved (and (not Q) (not K))
+        w-has-castled (and (not Q) (not K))
+        b-queenside-rook-moved (not q)
+        b-kingside-rook-moved (not k)
+        b-king-moved (and (not q) (not k))
+        b-has-castled (and (not q) (not k))]
+    (do
+      (println "f->c " fen-castle)
+      {:w {:queenside-rook-moved w-queenside-rook-moved :kingside-rook-moved w-kingside-rook-moved :king-moved w-king-moved :has-castled w-has-castled}
+       :b {:queenside-rook-moved b-queenside-rook-moved :kingside-rook-moved b-kingside-rook-moved :king-moved b-king-moved :has-castled b-has-castled}})))
 
 (defn str->fen-position-str [xs]
   (loop [xs xs

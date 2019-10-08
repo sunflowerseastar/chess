@@ -1,9 +1,10 @@
 (ns ^:figwheel-hooks chess.core
   (:require
    [goog.dom :as gdom]
+   [clojure.string :refer [split]]
    [chess.svgs :refer [svg-of]]
    [chess.legal :refer [pawn-two-square-move-from-initial-rank? is-legal? in-check? any-possible-moves? can-castle-kingside? can-castle-queenside?]]
-   [chess.fen :refer [is-fen-valid? create-fen create-fen-board-state fen-positions->board]]
+   [chess.fen :refer [is-fen-valid? create-fen create-fen-board-state fen->fen-positions fen-positions->board fen->castling]]
    [chess.helpers :refer [board-after-move other-color]]
    [reagent.core :as reagent :refer [atom]]))
 
@@ -55,6 +56,18 @@
     (reset! game game-initial-state)
     (swap! game assoc :state :rest :turn 'w :board (generate-board))
     (update-fen!)))
+
+(defn set-game-to-fen! [fen]
+  (let [board (fen->fen-positions fen)
+        turn (symbol (nth (split fen #" ") 1))
+        castling (fen->castling fen)]
+    (do
+      (println "sgtf! " board turn castling)
+      (reset! game game-initial-state)
+      (do (println "me " (count board))
+          (println "gen " (count (generate-board)))
+          (swap! game assoc :state :rest :turn turn :castling castling :board board))
+      (update-fen!))))
 
 (defn activate-piece! [square x y]
   (swap! game assoc :state :moving :active-piece
@@ -146,21 +159,21 @@
       (update-fen!)
       (update-draw!)))
 
-(defn contact-form [fen]
-  (let [s (reagent/atom {:fen fen})]
-    (fn []
-      [:form {:on-submit (fn [e]
-                           (.preventDefault e)
-                           (let [fen (@s :fen)]
-                             (do (println "submit " fen)
-                                 (if (is-fen-valid? fen)
-                                   (swap! game assoc :fen fen)
-                                   ))))}
-       [:input {:type :text :name :fen
-                :value (:fen @s)
-                :on-change (fn [e]
-                             (do (println "input first " (-> e .-target .-value) @s) (swap! s assoc :fen (-> e .-target .-value))))}]
-       [:button {:type :submit} "submit"]])))
+(defn fen-form [fen]
+  (let [form-state (reagent/atom {:fen fen})]
+    (letfn [(on-submit [e]
+              (.preventDefault e)
+              (let [fen (@form-state :fen)]
+                (do (println "submit " fen)
+                    (if (is-fen-valid? fen)
+                      (set-game-to-fen! fen)
+                      ))))]
+      (fn []
+        [:form {:on-submit #(on-submit %)}
+         [:input {:type :text :name :fen
+                  :value (:fen @form-state)
+                  :on-change #(swap! form-state assoc :fen (-> % .-target .-value))}]
+         [:button {:type :submit} "submit"]]))))
 
 (defn main []
   (let [{:keys [active-piece board castling current-winner draws en-passant-target fen in-check state result threefold-repitition turn], {:keys [w b]} :wins, {:keys [x y]} :en-passant-target} @game
@@ -186,7 +199,7 @@
                                                            [:li "in-check: " in-check]
                                                            [:li "active-piece: " active-piece]
                                                            [:li "fen: " fen]
-                                                           [contact-form "abc"]
+                                                           [fen-form "abc"]
                                                            ]]
           [:div.board {:class [turn
                                (if (= (@game :result) :checkmate) "checkmate")
@@ -194,7 +207,6 @@
                                (if (not-empty active-piece) "is-active")
                                (if stopped-p "stopped-p")
                                (if off-p "off-p")]}
-           ;; [contact-form fen]
            (map-indexed
             (fn [y row]
               (map-indexed
@@ -205,23 +217,27 @@
                        is-current-color-turn-p (= turn color)
                        can-activate-p (and is-state-rest-p is-current-color-turn-p)
                        is-active-p (and (= (active-piece :x) x) (= (active-piece :y) y))]
-                   [:div.square
-                    {:key (str x y)
-                     :class [(if (or (and (even? y) (odd? x)) (and (odd? y) (even? x))) "dark")
-                             (if can-activate-p "can-activate-p")
-                             (if is-active-p "active-p")
-                             (if (and (= king-x x) (= king-y y)) "in-check")]
-                     :style {:grid-column (+ x 1) :grid-row (+ y 1)}
-                     :on-click #(cond can-activate-p (activate-piece! square x y)
-                                      is-active-p (clear-active-piece!)
-                                      is-state-moving-p
-                                      (if (and (is-legal? active-piece x y board en-passant-target)
-                                               (not (in-check? (@game :turn) (board-after-move active-piece x y board) en-passant-target)))
-                                        (land-piece! active-piece x y)
-                                        (clear-active-piece!)))}
-                    (if (not-empty square)
-                      [:span.piece-container
-                       {:class [color piece-type]} (svg-of piece-type color)])]))
+                   (do
+                     ;; (println color piece-type)
+                       [:div.square
+                     {:key (str x y)
+                      :class [(if (or (and (even? y) (odd? x)) (and (odd? y) (even? x))) "dark")
+                              (if can-activate-p "can-activate-p")
+                              (if is-active-p "active-p")
+                              (if (and (= king-x x) (= king-y y)) "in-check")]
+                      :style {:grid-column (+ x 1) :grid-row (+ y 1)}
+                      :on-click #(cond can-activate-p (activate-piece! square x y)
+                                       is-active-p (clear-active-piece!)
+                                       is-state-moving-p
+                                       (if (and (is-legal? active-piece x y board en-passant-target)
+                                                (not (in-check? (@game :turn) (board-after-move active-piece x y board) en-passant-target)))
+                                         (land-piece! active-piece x y)
+                                         (clear-active-piece!)))}
+                     (if (not-empty square)
+                       (do
+                         ;; (println "piece-container " square)
+                         [:span.piece-container
+                         {:class [color piece-type]} (svg-of piece-type color)]))])))
                row))
             board)])]
      (let [can-castle-kingside (can-castle-kingside? turn board castling in-check)
