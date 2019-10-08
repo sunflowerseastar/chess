@@ -36,7 +36,7 @@ body {
 	max-width: 54vh;
 	margin: 0 auto;
 	grid-template-columns: repeat(8, 12.5%);
-	transition: all 1s cubic-bezier(0.3, 0.8, 0.1, 0.95);
+	transition: opacity 1s cubic-bezier(0.3, 0.8, 0.1, 0.95);
 }
 @media (min-width: 480px) {
 	.board {
