@@ -40,9 +40,9 @@
 (defn update-fen! []
   (let [fen-board-state (create-fen-board-state @game)
         fen (create-fen @game)]
-    (println "skip update-fen!")
-    ;; (swap! game assoc :fen fen)
-    ;; (swap! game update :fen-board-states conj fen-board-state)
+    (println "update-fen! " fen-board-state fen)
+    (swap! game assoc :fen fen)
+    (swap! game update :fen-board-states conj fen-board-state)
     ))
 
 (defn update-draw! []
@@ -64,14 +64,9 @@
         turn (symbol (nth (split fen #" ") 1))
         castling (fen->castling fen)]
     (do
-      (println "sgtf! board " board)
-      (println "sgtf! gen " (generate-board))
+      (println "sgtf! ")
       (reset! game game-initial-state)
-      (do (println "me " (count board))
-          (println "gen " (count (generate-board)))
-          (println "same? " (= board (generate-board)))
-          ;; (swap! game assoc :state :rest :turn turn :castling castling :board (generate-board)))
-      (swap! game assoc :state :rest :turn turn :castling castling :board board))
+      (swap! game assoc :state :rest :turn turn :castling castling :board board)
       (update-fen!))))
 
 (defn activate-piece! [square x y]
@@ -191,20 +186,20 @@
       (svg-of 'm "none")]
      [:div.board-container
       (if (@game :is-info-page-showing) [:div.info-page [:ul
-                                                           [:li "wins:"
-                                                            [:ul [:li "white: " w] [:li "black: " b]]]
-                                                           [:li "castle availability:"
-                                                            [:ul [:li "white: " (castling :w)] [:li "black: " (castling :b)]]]
-                                                           [:li "en passant:"
-                                                            [:ul [:li "x: " x] [:li "y: " y]]]
-                                                           [:li "draws: " draws]
-                                                           [:li "current-winner: " current-winner]
-                                                           [:li "state: " state]
-                                                           [:li "turn: " turn]
-                                                           [:li "in-check: " in-check]
-                                                           [:li "active-piece: " active-piece]
-                                                           [:li "fen: " fen]
-                                                           [fen-form "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"]]]
+                                                         [:li "wins:"
+                                                          [:ul [:li "white: " w] [:li "black: " b]]]
+                                                         [:li "castle availability:"
+                                                          [:ul [:li "white: " (castling :w)] [:li "black: " (castling :b)]]]
+                                                         [:li "en passant:"
+                                                          [:ul [:li "x: " x] [:li "y: " y]]]
+                                                         [:li "draws: " draws]
+                                                         [:li "current-winner: " current-winner]
+                                                         [:li "state: " state]
+                                                         [:li "turn: " turn]
+                                                         [:li "in-check: " in-check]
+                                                         [:li "active-piece: " active-piece]
+                                                         [:li "fen: " fen]
+                                                         [fen-form "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"]]]
           [:div.board {:class [turn
                                (if (= (@game :result) :checkmate) "checkmate")
                                current-winner
@@ -223,25 +218,25 @@
                        is-active-p (and (= (active-piece :x) x) (= (active-piece :y) y))]
                    (do
                      ;; (println color piece-type)
-                       [:div.square
-                     {:key (str x y)
-                      :class [(if (or (and (even? y) (odd? x)) (and (odd? y) (even? x))) "dark")
-                              (if can-activate-p "can-activate-p")
-                              (if is-active-p "active-p")
-                              (if (and (= king-x x) (= king-y y)) "in-check")]
-                      :style {:grid-column (+ x 1) :grid-row (+ y 1)}
-                      :on-click #(cond can-activate-p (activate-piece! square x y)
-                                       is-active-p (clear-active-piece!)
-                                       is-state-moving-p
-                                       (if (and (is-legal? active-piece x y board en-passant-target)
-                                                (not (in-check? (@game :turn) (board-after-move active-piece x y board) en-passant-target)))
-                                         (land-piece! active-piece x y)
-                                         (clear-active-piece!)))}
-                     (if (not-empty square)
-                       (do
-                         ;; (println "piece-container " square)
-                         [:span.piece-container
-                         {:class [color piece-type]} (svg-of piece-type color)]))])))
+                     [:div.square
+                      {:key (str x y)
+                       :class [(if (or (and (even? y) (odd? x)) (and (odd? y) (even? x))) "dark")
+                               (if can-activate-p "can-activate-p")
+                               (if is-active-p "active-p")
+                               (if (and (= king-x x) (= king-y y)) "in-check")]
+                       :style {:grid-column (+ x 1) :grid-row (+ y 1)}
+                       :on-click #(cond can-activate-p (activate-piece! square x y)
+                                        is-active-p (clear-active-piece!)
+                                        is-state-moving-p
+                                        (if (and (is-legal? active-piece x y board en-passant-target)
+                                                 (not (in-check? (@game :turn) (board-after-move active-piece x y board) en-passant-target)))
+                                          (land-piece! active-piece x y)
+                                          (clear-active-piece!)))}
+                      (if (not-empty square)
+                        (do
+                          ;; (println "piece-container " square)
+                          [:span.piece-container
+                           {:class [color piece-type]} (svg-of piece-type color)]))])))
                row))
             board)])]
      (let [can-castle-kingside (can-castle-kingside? turn board castling in-check)
