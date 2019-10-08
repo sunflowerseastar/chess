@@ -146,11 +146,6 @@
       (update-fen!)
       (update-draw!)))
 
-(defn game-status [{:keys [active-piece castling current-winner draws fen in-check state turn draws], {:keys [w b]} :wins, {:keys [x y]} :en-passant-target} game]
-  [:div.board-container
-
-   [:div.button-container [:button {:class "white-bg reset" :on-click #(reset-game!)} "reset"]]])
-
 (defn contact-form [fen]
   (let [s (reagent/atom {:fen fen})]
     (fn []
