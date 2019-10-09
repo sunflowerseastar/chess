@@ -60,17 +60,19 @@
 (defn update-check! [color]
   (do (println "u-c1! " color)
       (let [is-in-check (in-check? color (@game :board) (@game :en-passant-target))]
-     (do (println "u-c! " is-in-check)
-         (if is-in-check
-           (swap! game assoc :in-check color)
-           (swap! game assoc :in-check nil))))))
+        (do (println "u-c! " is-in-check)
+            (if is-in-check
+              (swap! game assoc :in-check color)
+              (swap! game assoc :in-check nil))))))
 
 (defn checkmate! [color]
-  (do (swap! game assoc-in [:wins (keyword color)] (inc (-> @game :wins (keyword color))) :current-winner color)
+  (do (println "checkmate! " color)
+      (swap! game assoc-in [:wins (keyword color)] (inc (-> @game :wins (keyword color))) :current-winner color)
       (swap! game assoc :current-winner color :result :checkmate :state :stopped)))
 
 (defn draw! []
-  (swap! game assoc :draws (inc (@game :draws)) :current-winner "draw" :result :draw :state :stopped :turn nil :threefold-repitition false))
+  (do (println "draw!")
+      (swap! game assoc :draws (inc (@game :draws)) :current-winner "draw" :result :draw :state :stopped :turn nil :threefold-repitition false)))
 
 (defn set-game-to-fen! [fen]
   (let [turn (symbol (nth (split fen #" ") 1))
@@ -106,7 +108,7 @@
   (swap! game assoc :state :rest :active-piece {}))
 
 (defn change-turn! []
-  (swap! game assoc :turn (other-color (@game :turn))))
+  (do (println "change-turn!") (swap! game assoc :turn (other-color (@game :turn)))))
 
 (defn castle-queenside! []
   (let [{:keys [turn board castling]} @game
@@ -157,19 +159,22 @@
     (if pawn-reached-end (swap! game assoc-in [:board end-y end-x] {:piece-type 'q :color color :x end-x :y end-y}))))
 
 (defn land-piece! [active-piece end-x end-y]
-  (do (update-board! active-piece end-x end-y)
-      (clear-active-piece!)
-      (update-en-passant! active-piece end-x end-y)
-      (update-castling! active-piece end-x end-y)
-      (update-promotion! active-piece end-x end-y)
-      (change-turn!)
-      (update-check! (active-piece :color))
-      (let [no-possible-moves (not (any-possible-moves? (other-color (active-piece :color)) (@game :board) (@game :en-passant-target)))
-            is-checkmate (and (@game :in-check) no-possible-moves)]
-        (cond is-checkmate (checkmate! (active-piece :color))
-              no-possible-moves (draw!)))
-      (update-fen!)
-      (update-threefold-repitition!)))
+  (let [landing-color (active-piece :color)
+        new-color (other-color landing-color)]
+    (do (update-board! active-piece end-x end-y)
+        (clear-active-piece!)
+        (update-en-passant! active-piece end-x end-y)
+        (update-castling! active-piece end-x end-y)
+        (update-promotion! active-piece end-x end-y)
+        (change-turn!)
+        (update-check! new-color)
+        (let [no-possible-moves (not (any-possible-moves? new-color (@game :board) (@game :en-passant-target)))
+              is-checkmate (and (@game :in-check) no-possible-moves)]
+          (do (println "land-piece! " (@game :in-check) no-possible-moves is-checkmate)
+              (cond is-checkmate (checkmate! landing-color)
+                    no-possible-moves (draw!))))
+        (update-fen!)
+        (update-threefold-repitition!))))
 
 (defn fen-form [fen]
   (let [form-state (reagent/atom {:fen fen})]
@@ -211,9 +216,7 @@
                                                          [:li "active-piece: " active-piece]
                                                          [:li "fen: " fen]
                                                          [fen-form fen]]]
-          [:div.board {:class [turn
-                               (if (= (@game :result) :checkmate) "checkmate")
-                               current-winner
+          [:div.board {:class [(if (= (@game :result) :checkmate) (str current-winner " checkmate") turn)
                                (if (not-empty active-piece) "is-active")
                                (if stopped-p "stopped-p")
                                (if off-p "off-p")]}
