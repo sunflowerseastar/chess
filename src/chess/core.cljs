@@ -21,7 +21,6 @@
 (def game-initial-state {:wins {:w 0 :b 0}
                          :draws 0
                          :current-winner nil
-                         :is-info-page-showing false
                          :active-piece {}
                          :state :stopped
                          :turn nil
@@ -35,7 +34,7 @@
                          :fen ""
                          :fen-board-states []})
 
-(def game (atom game-initial-state))
+(def game (atom (conj game-initial-state {:is-info-page-showing false})))
 
 (defn update-fen! []
   (let [fen-board-state (create-fen-board-state @game)
@@ -47,6 +46,14 @@
   (let [fbs (@game :fen-board-states)
         threefold-repitition (> (count (filter #(= % (last fbs)) fbs)) 2)]
     (if threefold-repitition (swap! game assoc :threefold-repitition true))))
+
+(defn restart-game! []
+  (swap! game assoc :state :stopped :turn 'w :in-check nil :threefold-repitition false :result nil :current-winner nil
+         :castling {:w {:queenside-rook-moved false :kingside-rook-moved false :king-moved false :has-castled false}
+                    :b {:queenside-rook-moved false :kingside-rook-moved false :king-moved false :has-castled false}}
+         :active-piece {} :en-passant-target {:x -1 :y -1} :board (generate-board))
+
+  (reset! game game-initial-state))
 
 (defn reset-game! []
   (reset! game game-initial-state))
@@ -189,11 +196,11 @@
                 (if (is-fen-valid? fen)
                   (set-game-to-fen! fen))))]
       (fn []
-        [:form {:on-submit #(on-submit %)}
+        [:form.fen-form {:on-submit #(on-submit %)}
          [:input {:type :text :name :fen
                   :value (:fen @form-state)
                   :on-change #(swap! form-state assoc :fen (-> % .-target .-value))}]
-         [:button {:type :submit} "update board"]]))))
+         [:button {:class "white-bg" :type :submit} "go"]]))))
 
 (defn main []
   (let [{:keys [active-piece board castling current-winner draws en-passant-target fen in-check state result threefold-repitition turn], {:keys [w b]} :wins, {:keys [x y]} :en-passant-target} @game
@@ -205,22 +212,24 @@
      [:div.rook-three-lines {:on-click #(swap! game assoc :is-info-page-showing (not (@game :is-info-page-showing)))}
       (svg-of 'm "none")]
      [:div.board-container
-      (if (@game :is-info-page-showing) [:div.info-page [:ul
-                                                         [:li "wins:"
-                                                          [:ul [:li "white: " w] [:li "black: " b]]]
-                                                         [:li "castle availability:"
-                                                          [:ul [:li "white: " (castling :w)] [:li "black: " (castling :b)]]]
-                                                         [:li "en passant:"
-                                                          [:ul [:li "x: " x] [:li "y: " y]]]
-                                                         [:li "draws: " draws]
-                                                         [:li "current-winner: " current-winner]
-                                                         [:li "state: " state]
-                                                         [:li "turn: " turn]
-                                                         [:li "result: " result]
-                                                         [:li "in-check: " in-check]
-                                                         [:li "active-piece: " active-piece]
-                                                         [:li "fen: " fen]
-                                                         [fen-form fen]]]
+      (if (@game :is-info-page-showing) [:div.info-page
+                                         [:div.fen-container [:p "fen:"]
+                                          [fen-form fen]]
+                                         [:ul
+                                          [:li "wins:"
+                                           [:ul [:li "white: " w] [:li "black: " b]]]
+                                          [:li "castle availability:"
+                                           [:ul [:li "white: " (castling :w)] [:li "black: " (castling :b)]]]
+                                          [:li "en passant:"
+                                           [:ul [:li "x: " x] [:li "y: " y]]]
+                                          [:li "draws: " draws]
+                                          [:li "current-winner: " current-winner]
+                                          [:li "state: " state]
+                                          [:li "turn: " turn]
+                                          [:li "result: " result]
+                                          [:li "in-check: " in-check]
+                                          [:li "active-piece: " active-piece]]
+                                         ]
           [:div.board {:class [(if (= (@game :result) :checkmate) (str current-winner " checkmate") turn)
                                (if (not-empty active-piece) "is-active")
                                (if stopped-p "stopped-p")
@@ -257,7 +266,9 @@
      (let [can-castle-kingside (can-castle-kingside? turn board castling in-check)
            can-castle-queenside (can-castle-queenside? turn board castling in-check)]
        (if (@game :is-info-page-showing)
-         [:div.button-container [:button {:class "white-bg reset" :on-click #(reset-game!)} "reset"]]
+         [:div.button-container
+          [:div.button-container [:button {:class "white-bg" :on-click #(restart-game!)} "restart"]]
+          [:div.button-container [:button {:class "white-bg reset" :on-click #(reset-game!)} "reset"]]]
          [:div.button-container
           [:button {:class (if (not stopped-p) "inactive") :on-click #(start!)} "start"]
           [:button {:class (if (not can-castle-queenside) "inactive") :on-click #(castle-queenside!)} "castle Q"]
