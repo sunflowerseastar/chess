@@ -4,7 +4,7 @@
    [clojure.string :refer [split]]
    [chess.svgs :refer [svg-of]]
    [chess.legal :refer [pawn-two-square-move-from-initial-rank? is-legal? in-check? any-possible-moves? can-castle-kingside? can-castle-queenside?]]
-   [chess.fen :refer [is-fen-valid? create-fen create-fen-board-state fen->fen-positions fen-positions->board fen->castling fen->en-passant-target]]
+   [chess.fen :refer [is-fen-valid? castling->fen-castling create-fen create-fen-board-state en-passant-target->fen-en-passant fen->fen-positions fen-positions->board fen->castling fen->en-passant-target]]
    [chess.helpers :refer [board-after-move other-color]]
    [reagent.core :as reagent :refer [atom]]))
 
@@ -48,10 +48,10 @@
     (if threefold-repitition (swap! game assoc :threefold-repitition true))))
 
 (defn restart-game! []
-  (swap! game assoc :state :stopped :turn 'w :in-check nil :threefold-repitition false :result nil :current-winner nil
-         :castling {:w {:queenside-rook-moved false :kingside-rook-moved false :king-moved false :has-castled false}
-                    :b {:queenside-rook-moved false :kingside-rook-moved false :king-moved false :has-castled false}}
-         :active-piece {} :en-passant-target {:x -1 :y -1} :board (generate-board))
+  (do (println "restart-game") (swap! game assoc :state :stopped :turn 'w :in-check nil :threefold-repitition false :result nil :current-winner nil
+                                      :castling {:w {:queenside-rook-moved false :kingside-rook-moved false :king-moved false :has-castled false}
+                                                 :b {:queenside-rook-moved false :kingside-rook-moved false :king-moved false :has-castled false}}
+                                      :active-piece {} :en-passant-target {:x -1 :y -1} :board (generate-board)))
 
   (reset! game game-initial-state))
 
@@ -196,10 +196,10 @@
          [:input {:type :text :name :fen
                   :value (:fen @form-state)
                   :on-change #(swap! form-state assoc :fen (-> % .-target .-value))}]
-         [:button {:class "white-bg" :type :submit} "go"]]))))
+         [:button {:class "white-bg" :type :submit} "fen"]]))))
 
 (defn main []
-  (let [{:keys [active-piece board castling current-winner draws en-passant-target fen in-check state result threefold-repitition turn], {:keys [w b]} :wins, {:keys [x y]} :en-passant-target} @game
+  (let [{:keys [active-piece board castling current-winner draws en-passant-target fen in-check state result threefold-repitition turn], {:keys [w b]} :wins} @game
         stopped-p (= state :stopped)
         off-p (and (= state :stopped) (nil? current-winner))
         {king-x :x, king-y :y, :or {king-x -1 king-y -1}}
@@ -209,23 +209,17 @@
       (svg-of 'm "none")]
      [:div.board-container
       (if (@game :is-info-page-showing) [:div.info-page
-                                         [:div.fen-container [:p "fen:"]
-                                          [fen-form fen]]
+                                         [:div.fen-container [fen-form fen]]
                                          [:ul
-                                          [:li "wins:"
-                                           [:ul [:li "white: " w] [:li "black: " b]]]
-                                          [:li "castle availability:"
-                                           [:ul [:li "white: " (castling :w)] [:li "black: " (castling :b)]]]
-                                          [:li "en passant:"
-                                           [:ul [:li "x: " x] [:li "y: " y]]]
+                                          [:li "wins:" [:ul [:li "white: " w] [:li "black: " b]]]
                                           [:li "draws: " draws]
                                           [:li "current-winner: " current-winner]
-                                          [:li "state: " state]
-                                          [:li "turn: " turn]
                                           [:li "result: " result]
+                                          [:li "turn: " turn]
+                                          [:li "castle availability: " (castling->fen-castling castling)]
+                                          [:li "en passant: " (en-passant-target->fen-en-passant en-passant-target)]
                                           [:li "in-check: " in-check]
-                                          [:li "active-piece: " active-piece]]
-                                         ]
+                                          ]]
           [:div.board {:class [(if (= (@game :result) :checkmate) (str current-winner " checkmate") turn)
                                (if (not-empty active-piece) "is-active")
                                (if stopped-p "stopped-p")

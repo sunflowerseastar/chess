@@ -284,12 +284,39 @@ svg.w {
 .fen-form input {
   flex: 1;
   display: block;
+  padding: 0 0.5em;
   color: white;
+  font-size: 10px;
   background: #333;
-  border: 1px solid #555;
+  border: none;
 }
+@media (min-width: 480px) {
+	.fen-form input {
+    padding: 0 1em;
+		font-size: 11px;
+	}
+}
+@media (min-width: 768px) {
+	.fen-form input {
+		font-size: 14px;
+	}
+}
+@media (min-width: 992px) {
+	.fen-form input {
+    padding: 0 1.6em;
+		font-size: 15px;
+	}
+}
+
 .fen-form button {
   max-width: 70px;
+  margin: 0;
+  color: white;
+  background: #222;
+}
+.fen-form button:hover {
+  color: black;
+  background: white;
 }
 
 .button-container {
