@@ -43,7 +43,7 @@
     (swap! game assoc :fen fen)
     (swap! game update :fen-board-states conj fen-board-state)))
 
-(defn update-draw! []
+(defn update-threefold-repitition! []
   (let [fbs (@game :fen-board-states)
         threefold-repitition (> (count (filter #(= % (last fbs)) fbs)) 2)]
     (if threefold-repitition (swap! game assoc :threefold-repitition true))))
@@ -57,15 +57,17 @@
     (swap! game assoc :state :rest :turn 'w :board (generate-board))
     (update-fen!)))
 
-(defn update-check! []
-  (if (in-check? (other-color (@game :turn)) (@game :board) (@game :en-passant-target))
-    (swap! game assoc :in-check (other-color (@game :turn)))
-    (swap! game assoc :in-check nil)))
+(defn update-check! [color]
+  (do (println "u-c1! " color)
+      (let [is-in-check (in-check? color (@game :board) (@game :en-passant-target))]
+     (do (println "u-c! " is-in-check)
+         (if is-in-check
+           (swap! game assoc :in-check color)
+           (swap! game assoc :in-check nil))))))
 
 (defn checkmate! [color]
-  (let [win-color (if (= color 'w) :w :b)]
-    (do (swap! game assoc-in [:wins win-color] (inc (-> @game :wins win-color)) :current-winner color)
-        (swap! game assoc :current-winner color :result :checkmate :state :stopped :turn nil))))
+  (do (swap! game assoc-in [:wins (keyword color)] (inc (-> @game :wins (keyword color))) :current-winner color)
+      (swap! game assoc :current-winner color :result :checkmate :state :stopped)))
 
 (defn draw! []
   (swap! game assoc :draws (inc (@game :draws)) :current-winner "draw" :result :draw :state :stopped :turn nil :threefold-repitition false))
@@ -77,13 +79,17 @@
         board (fen->fen-positions fen)]
     (do
       (swap! game assoc :state :rest :turn turn :castling castling :en-passant-target en-passant-target :board board)
-      (update-check!)
-      (let [w-no-possible-moves (not (any-possible-moves? 'w (@game :board) (@game :en-passant-target)))
-            b-no-possible-moves (not (any-possible-moves? 'b (@game :board) (@game :en-passant-target)))
-            current-turn-no-possible-moves (if (= turn 'w) w-no-possible-moves b-no-possible-moves)]
-        (cond (and (= (@game :in-check) 'w) w-no-possible-moves) (checkmate! 'b)
-              (and (= (@game :in-check) 'b) b-no-possible-moves) (checkmate! 'w)
-              current-turn-no-possible-moves (draw!)))
+      (update-check! turn)
+      (let [other-turn (other-color turn)
+            is-in-check-turn (in-check? turn (@game :board) (@game :en-passant-target))
+            is-in-check-other-turn (in-check? other-turn (@game :board) (@game :en-passant-target))
+            no-possible-moves-turn (not (any-possible-moves? turn (@game :board) (@game :en-passant-target)))
+            no-possible-moves-other-turn (not (any-possible-moves? other-turn (@game :board) (@game :en-passant-target)))
+            ]
+        (println (@game :in-check) turn other-turn)
+        (cond (and is-in-check-other-turn no-possible-moves-other-turn) (checkmate! turn)
+              (and is-in-check-turn no-possible-moves-turn) (checkmate! other-turn)
+              (or no-possible-moves-turn no-possible-moves-other-turn) (draw!)))
       (update-fen!))))
 
 (defn activate-piece! [square x y]
@@ -156,13 +162,14 @@
       (update-en-passant! active-piece end-x end-y)
       (update-castling! active-piece end-x end-y)
       (update-promotion! active-piece end-x end-y)
-      (update-check!)
-      (let [no-possible-moves (not (any-possible-moves? (other-color (active-piece :color)) (@game :board) (@game :en-passant-target)))]
-        (cond (and (@game :in-check) no-possible-moves) (checkmate! (active-piece :color))
-              no-possible-moves (draw!)
-              :else (change-turn!)))
+      (change-turn!)
+      (update-check! (active-piece :color))
+      (let [no-possible-moves (not (any-possible-moves? (other-color (active-piece :color)) (@game :board) (@game :en-passant-target)))
+            is-checkmate (and (@game :in-check) no-possible-moves)]
+        (cond is-checkmate (checkmate! (active-piece :color))
+              no-possible-moves (draw!)))
       (update-fen!)
-      (update-draw!)))
+      (update-threefold-repitition!)))
 
 (defn fen-form [fen]
   (let [form-state (reagent/atom {:fen fen})]
