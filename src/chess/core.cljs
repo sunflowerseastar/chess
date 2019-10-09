@@ -57,13 +57,16 @@
     (swap! game assoc :state :rest :turn 'w :board (generate-board))
     (update-fen!)))
 
+(defn in-check! [color]
+  (swap! game assoc :in-check color))
+
 (defn update-check! [color]
   (do (println "u-c1! " color)
       (let [is-in-check (in-check? color (@game :board) (@game :en-passant-target))]
         (do (println "u-c! " is-in-check)
             (if is-in-check
-              (swap! game assoc :in-check color)
-              (swap! game assoc :in-check nil))))))
+              (in-check! color)
+              (in-check! nil))))))
 
 (defn checkmate! [color]
   (do (println "checkmate! " color)
@@ -88,9 +91,11 @@
             no-possible-moves-turn (not (any-possible-moves? turn (@game :board) (@game :en-passant-target)))
             no-possible-moves-other-turn (not (any-possible-moves? other-turn (@game :board) (@game :en-passant-target)))
             ]
-        (println (@game :in-check) turn other-turn)
+        (println "sgtf! " (@game :in-check) turn other-turn)
         (cond (and is-in-check-other-turn no-possible-moves-other-turn) (checkmate! turn)
+              (is-in-check-other-turn (in-check! other-turn))
               (and is-in-check-turn no-possible-moves-turn) (checkmate! other-turn)
+              (is-in-check-turn (in-check! turn))
               (or no-possible-moves-turn no-possible-moves-other-turn) (draw!)))
       (update-fen!))))
 
