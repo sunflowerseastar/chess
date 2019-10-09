@@ -98,9 +98,9 @@
             no-possible-moves-other-turn (not (any-possible-moves? other-turn (@game :board) (@game :en-passant-target)))]
         (cond (and is-in-check-other-turn no-possible-moves-other-turn) (checkmate! turn)
               is-in-check-other-turn (in-check! other-turn)
+              no-possible-moves-other-turn (draw!)
               (and is-in-check-turn no-possible-moves-turn) (checkmate! other-turn)
-              is-in-check-turn (in-check! turn)
-              (or no-possible-moves-turn no-possible-moves-other-turn) (draw!)))
+              is-in-check-turn (in-check! turn)))
       (update-fen!))))
 
 (defn activate-piece! [square x y]
