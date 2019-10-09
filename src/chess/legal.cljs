@@ -97,7 +97,8 @@
         king (first (filter #(and (= (% :color) color) (= (% :piece-type) 'k)) flat-board))
         opponents (vec (filter #(= (% :color) (other-color color)) flat-board))
         opponents-checking-ps (map #(is-legal? % (king :x) (king :y) board en-passant-target) opponents)]
-    (some true? opponents-checking-ps)))
+    (do (println "in-check?" color king)
+        (some true? opponents-checking-ps))))
 
 (defn any-possible-moves?
   "Take a color, board, and en-passant-target, and return true if a move can end not in check."

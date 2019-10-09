@@ -83,19 +83,19 @@
         en-passant-target (fen->en-passant-target fen)
         board (fen->fen-positions fen)]
     (do
-      (swap! game assoc :state :rest :turn turn :castling castling :en-passant-target en-passant-target :board board)
-      (update-check! turn)
+      (swap! game assoc :state :rest :turn turn :castling castling
+             :current-winner nil :active-piece {} :threefold-repitition false :result nil
+             :en-passant-target en-passant-target :board board)
       (let [other-turn (other-color turn)
             is-in-check-turn (in-check? turn (@game :board) (@game :en-passant-target))
             is-in-check-other-turn (in-check? other-turn (@game :board) (@game :en-passant-target))
             no-possible-moves-turn (not (any-possible-moves? turn (@game :board) (@game :en-passant-target)))
-            no-possible-moves-other-turn (not (any-possible-moves? other-turn (@game :board) (@game :en-passant-target)))
-            ]
-        (println "sgtf! " (@game :in-check) turn other-turn)
+            no-possible-moves-other-turn (not (any-possible-moves? other-turn (@game :board) (@game :en-passant-target)))]
+        (println "sgtf! " other-turn is-in-check-turn is-in-check-other-turn no-possible-moves-turn no-possible-moves-other-turn turn other-turn)
         (cond (and is-in-check-other-turn no-possible-moves-other-turn) (checkmate! turn)
-              (is-in-check-other-turn (in-check! other-turn))
+              is-in-check-other-turn (in-check! other-turn)
               (and is-in-check-turn no-possible-moves-turn) (checkmate! other-turn)
-              (is-in-check-turn (in-check! turn))
+              is-in-check-turn (in-check! turn)
               (or no-possible-moves-turn no-possible-moves-other-turn) (draw!)))
       (update-fen!))))
 
