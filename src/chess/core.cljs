@@ -18,9 +18,7 @@
    (vec (for [x (range 0 8)] {:color 'w :piece-type 'p :x x :y 6}))
    (vec (map #(hash-map :color 'w :piece-type %1 :x %2 :y 7) ['r 'n 'b 'q 'k 'b 'n 'r] (range 0 8)))])
 
-(def game-initial-state {:wins {:w 0 :b 0}
-                         :draws 0
-                         :current-winner nil
+(def game-initial-state {:current-winner nil
                          :active-piece {}
                          :state :stopped
                          :turn nil
@@ -32,14 +30,20 @@
                          :en-passant-target {:x -1 :y -1}
                          :board (generate-board)
                          :fen ""
+                         :fen-form ""
                          :fen-board-states []})
 
-(def game (atom (conj game-initial-state {:is-info-page-showing false})))
+(def score-initial-state {:wins {:w 0 :b 0}
+                          :draws 0})
+
+(def game (atom game-initial-state))
+(def score (atom score-initial-state))
+(def ui (atom {:is-info-page-showing false}))
 
 (defn update-fen! []
   (let [fen-board-state (create-fen-board-state @game)
         fen (create-fen @game)]
-    (swap! game assoc :fen fen)
+    (do (println "uf! " fen) (swap! game assoc :fen fen :fen-form fen))
     (swap! game update :fen-board-states conj fen-board-state)))
 
 (defn update-threefold-repitition! []
@@ -47,16 +51,8 @@
         threefold-repitition (> (count (filter #(= % (last fbs)) fbs)) 2)]
     (if threefold-repitition (swap! game assoc :threefold-repitition true))))
 
-(defn restart-game! []
-  (do (println "restart-game") (swap! game assoc :state :stopped :turn 'w :in-check nil :threefold-repitition false :result nil :current-winner nil
-                                      :castling {:w {:queenside-rook-moved false :kingside-rook-moved false :king-moved false :has-castled false}
-                                                 :b {:queenside-rook-moved false :kingside-rook-moved false :king-moved false :has-castled false}}
-                                      :active-piece {} :en-passant-target {:x -1 :y -1} :board (generate-board)))
-
-  (reset! game game-initial-state))
-
 (defn reset-game! []
-  (reset! game game-initial-state))
+  (reset! score score-initial-state))
 
 (defn start! []
   (do
@@ -74,13 +70,12 @@
       (in-check! nil))))
 
 (defn checkmate! [color]
-  (do (println "checkmate! " color)
-      (swap! game assoc-in [:wins (keyword color)] (inc (-> @game :wins (keyword color))) :current-winner color)
-      (swap! game assoc :current-winner color :result :checkmate :state :stopped)))
+  (swap! score assoc-in [:wins (keyword color)] (inc (-> @game :wins (keyword color))) :current-winner color)
+  (swap! game assoc :current-winner color :result :checkmate :state :stopped))
 
 (defn draw! []
-  (do (println "draw!")
-      (swap! game assoc :draws (inc (@game :draws)) :current-winner "draw" :result :draw :state :stopped :turn nil :threefold-repitition false)))
+  (swap! score assoc :draws (inc (@game :draws)))
+  (swap! game assoc :current-winner "draw" :result :draw :state :stopped :turn nil :threefold-repitition false))
 
 (defn set-game-to-fen! [fen]
   (let [turn (symbol (nth (split fen #" ") 1))
@@ -104,8 +99,8 @@
       (update-fen!))))
 
 (defn activate-piece! [square x y]
-  (swap! game assoc :state :moving :active-piece
-         {:color (square :color) :piece-type (square :piece-type) :x x :y y}))
+  (swap! game assoc :state :moving
+         :active-piece {:color (square :color) :piece-type (square :piece-type) :x x :y y}))
 
 (defn update-board! [active-piece end-x end-y]
   (let [start-y (active-piece :y)
@@ -148,8 +143,8 @@
 (defn update-castling! [active-piece end-x end-y]
   (let [turn (@game :turn) {:keys [color piece-type x]} active-piece]
     (cond (= piece-type 'k) (swap! game assoc-in [:castling (keyword turn) :king-moved] true)
-          (and (= piece-type 'r) (= x 0)) (swap! game assoc-in [:castling (keyword turn):queenside-rook-moved] true)
-          (and (= piece-type 'r) (= x 7)) (swap! game assoc-in [:castling (keyword turn):kingside-rook-moved] true))))
+          (and (= piece-type 'r) (= x 0)) (swap! game assoc-in [:castling (keyword turn) :queenside-rook-moved] true)
+          (and (= piece-type 'r) (= x 7)) (swap! game assoc-in [:castling (keyword turn) :kingside-rook-moved] true))))
 
 (defn update-en-passant! [active-piece end-x end-y]
   (letfn [(reset-en-passant! [] (swap! game update :en-passant-target assoc :x -1 :y -1))]
@@ -184,86 +179,91 @@
         (update-fen!)
         (update-threefold-repitition!))))
 
-(defn fen-form [fen]
-  (let [form-state (reagent/atom {:fen fen})]
+(defn fen-form [initial-fen]
+  (let [ifen (@game :fen)
+        xform-state (reagent/atom {:fen ifen})
+        form-state (reagent/atom {:fen ifen})
+        ]
     (letfn [(on-submit [e]
               (.preventDefault e)
-              (let [fen (@form-state :fen)]
+              (let [fen (@game :fen-form)]
                 (if (is-fen-valid? fen)
                   (set-game-to-fen! fen))))]
       (fn []
-        [:form.fen-form {:on-submit #(on-submit %)}
-         [:input {:type :text :name :fen
-                  :value (:fen @form-state)
-                  :on-change #(swap! form-state assoc :fen (-> % .-target .-value))}]
-         [:button {:class "white-bg" :type :submit} "fen"]]))))
+        (do (println "fen-form " initial-fen) [:form.fen-form {:on-submit #(on-submit %)}
+          [:input {:type :text :name :fen
+                   :value (@game :fen-form)
+                   :on-change #(swap! game assoc :fen-form (-> % .-target .-value))}]
+          [:button {:class "white-bg" :type :submit} "fen"]])))))
 
 (defn main []
-  (let [{:keys [active-piece board castling current-winner draws en-passant-target fen in-check state result threefold-repitition turn], {:keys [w b]} :wins} @game
+  (let [{:keys [active-piece board castling current-winner draws en-passant-target fen in-check state result threefold-repitition turn]} @game
+        {{:keys [w b]} :wins} @score
         stopped-p (= state :stopped)
         off-p (and (= state :stopped) (nil? current-winner))
         {king-x :x, king-y :y, :or {king-x -1 king-y -1}}
         (first (filter #(and (= (% :color) in-check) (= (% :piece-type) 'k)) (flatten board)))]
-    [:div.chess {:class (if (@game :is-info-page-showing) "is-info-page-showing")}
-     [:div.rook-three-lines {:on-click #(swap! game assoc :is-info-page-showing (not (@game :is-info-page-showing)))}
-      (svg-of 'm "none")]
-     [:div.board-container
-      (if (@game :is-info-page-showing) [:div.info-page
-                                         [:div.fen-container [fen-form fen]]
-                                         [:ul
-                                          [:li "wins:" [:ul [:li "white: " w] [:li "black: " b]]]
-                                          [:li "draws: " draws]
-                                          [:li "current-winner: " current-winner]
-                                          [:li "result: " result]
-                                          [:li "turn: " turn]
-                                          [:li "castle availability: " (castling->fen-castling castling)]
-                                          [:li "en passant: " (en-passant-target->fen-en-passant en-passant-target)]
-                                          [:li "in-check: " in-check]
-                                          ]]
-          [:div.board {:class [(if (= (@game :result) :checkmate) (str current-winner " checkmate") turn)
-                               (if (not-empty active-piece) "is-active")
-                               (if stopped-p "stopped-p")
-                               (if off-p "off-p")]}
-           (map-indexed
-            (fn [y row]
-              (map-indexed
-               (fn [x square]
-                 (let [{:keys [color piece-type]} square
-                       is-state-rest-p (= state :rest)
-                       is-state-moving-p (= state :moving)
-                       is-current-color-turn-p (= turn color)
-                       can-activate-p (and is-state-rest-p is-current-color-turn-p)
-                       is-active-p (and (= (active-piece :x) x) (= (active-piece :y) y))]
-                   [:div.square
-                    {:key (str x y)
-                     :class [(if (or (and (even? y) (odd? x)) (and (odd? y) (even? x))) "dark")
-                             (if can-activate-p "can-activate-p")
-                             (if is-active-p "active-p")
-                             (if (and (= king-x x) (= king-y y)) "in-check")]
-                     :style {:grid-column (+ x 1) :grid-row (+ y 1)}
-                     :on-click #(cond can-activate-p (activate-piece! square x y)
-                                      is-active-p (clear-active-piece!)
-                                      is-state-moving-p
-                                      (if (and (is-legal? active-piece x y board en-passant-target)
-                                               (not (in-check? (@game :turn) (board-after-move active-piece x y board) en-passant-target)))
-                                        (land-piece! active-piece x y)
-                                        (clear-active-piece!)))}
-                    (if (not-empty square)
-                      [:span.piece-container
-                       {:class [color piece-type]} (svg-of piece-type color)])]))
-               row))
-            board)])]
-     (let [can-castle-kingside (can-castle-kingside? turn board castling in-check)
-           can-castle-queenside (can-castle-queenside? turn board castling in-check)]
-       (if (@game :is-info-page-showing)
-         [:div.button-container
-          [:div.button-container [:button {:class "white-bg" :on-click #(restart-game!)} "restart"]]
-          [:div.button-container [:button {:class "white-bg reset" :on-click #(reset-game!)} "reset"]]]
-         [:div.button-container
-          [:button {:class (if (not stopped-p) "inactive") :on-click #(start!)} "start"]
-          [:button {:class (if (not can-castle-queenside) "inactive") :on-click #(castle-queenside!)} "castle Q"]
-          [:button {:class (if (not can-castle-kingside) "inactive") :on-click #(castle-kingside!)} "castle K"]
-          [:button {:class (if (not threefold-repitition) "inactive") :on-click #(draw!)} "draw"]]))]))
+    (do (println "main fen " fen)
+        [:div.chess {:class (if (@ui :is-info-page-showing) "is-info-page-showing")}
+      [:div.rook-three-lines {:on-click #(swap! ui assoc :is-info-page-showing (not (@ui :is-info-page-showing)))}
+       (svg-of 'm "none")]
+      [:div.board-container
+       (if (@ui :is-info-page-showing) [:div.info-page
+                                        [:div.fen-container [fen-form fen]]
+                                        [:ul
+                                         [:li "wins:" [:ul [:li "white: " w] [:li "black: " b]]]
+                                         [:li "draws: " draws]
+                                         [:li "current-winner: " current-winner]
+                                         [:li "result: " result]
+                                         [:li "turn: " turn]
+                                         [:li "castle availability: " (castling->fen-castling castling)]
+                                         [:li "en passant: " (en-passant-target->fen-en-passant en-passant-target)]
+                                         [:li "in-check: " in-check]
+                                         ]]
+           [:div.board {:class [(if (= (@game :result) :checkmate) (str current-winner " checkmate") turn)
+                                (if (not-empty active-piece) "is-active")
+                                (if stopped-p "stopped-p")
+                                (if off-p "off-p")]}
+            (map-indexed
+             (fn [y row]
+               (map-indexed
+                (fn [x square]
+                  (let [{:keys [color piece-type]} square
+                        is-state-rest-p (= state :rest)
+                        is-state-moving-p (= state :moving)
+                        is-current-color-turn-p (= turn color)
+                        can-activate-p (and is-state-rest-p is-current-color-turn-p)
+                        is-active-p (and (= (active-piece :x) x) (= (active-piece :y) y))]
+                    [:div.square
+                     {:key (str x y)
+                      :class [(if (or (and (even? y) (odd? x)) (and (odd? y) (even? x))) "dark")
+                              (if can-activate-p "can-activate-p")
+                              (if is-active-p "active-p")
+                              (if (and (= king-x x) (= king-y y)) "in-check")]
+                      :style {:grid-column (+ x 1) :grid-row (+ y 1)}
+                      :on-click #(cond can-activate-p (activate-piece! square x y)
+                                       is-active-p (clear-active-piece!)
+                                       is-state-moving-p
+                                       (if (and (is-legal? active-piece x y board en-passant-target)
+                                                (not (in-check? (@game :turn) (board-after-move active-piece x y board) en-passant-target)))
+                                         (land-piece! active-piece x y)
+                                         (clear-active-piece!)))}
+                     (if (not-empty square)
+                       [:span.piece-container
+                        {:class [color piece-type]} (svg-of piece-type color)])]))
+                row))
+             board)])]
+      (let [can-castle-kingside (can-castle-kingside? turn board castling in-check)
+            can-castle-queenside (can-castle-queenside? turn board castling in-check)]
+        (if (@ui :is-info-page-showing)
+          [:div.button-container
+           [:div.button-container [:button {:class "white-bg" :on-click #(start!)} "restart"]]
+           [:div.button-container [:button {:class "white-bg reset" :on-click #(reset-game!)} "reset"]]]
+          [:div.button-container
+           [:button {:class (if (not stopped-p) "inactive") :on-click #(start!)} "start"]
+           [:button {:class (if (not can-castle-queenside) "inactive") :on-click #(castle-queenside!)} "castle Q"]
+           [:button {:class (if (not can-castle-kingside) "inactive") :on-click #(castle-kingside!)} "castle K"]
+           [:button {:class (if (not threefold-repitition) "inactive") :on-click #(draw!)} "draw"]]))])))
 
 (defn get-app-element []
   (gdom/getElement "app"))
