@@ -88,8 +88,9 @@
   (let [K (if (and (not (w :has-castled)) (not (w :king-moved)) (not (w :kingside-rook-moved))) 'K)
         Q (if (and (not (w :has-castled)) (not (w :king-moved)) (not (w :queenside-rook-moved))) 'Q)
         k (if (and (not (b :has-castled)) (not (b :king-moved)) (not (b :kingside-rook-moved))) 'k)
-        q (if (and (not (b :has-castled)) (not (b :king-moved)) (not (b :queenside-rook-moved))) 'q)]
-    (str K Q k q)))
+        q (if (and (not (b :has-castled)) (not (b :king-moved)) (not (b :queenside-rook-moved))) 'q)
+        fen-castling (str K Q k q)]
+    (if (not-empty fen-castling) fen-castling "-")))
 
 (defn en-passant-target->fen-en-passant [{:keys [x y]}]
   (if (= x -1) "-"
@@ -101,9 +102,7 @@
   (let [{:keys [board castling current-winner en-passant-target in-check state turn]} game
         fen-rank (board->fen-rank board)
         fen-castling (castling->fen-castling castling)
-        en-passant-algebraic (en-passant-target->fen-en-passant en-passant-target)
-        half-move-clock 5
-        full-move-clock 2]
+        en-passant-algebraic (en-passant-target->fen-en-passant en-passant-target)]
     (str fen-rank " " turn " " fen-castling " " en-passant-algebraic)))
 
 (defn create-fen [game]
