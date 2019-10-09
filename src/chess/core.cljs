@@ -115,31 +115,39 @@
 (defn change-turn! []
   (swap! game assoc :turn (other-color (@game :turn))))
 
+(defn update-post-castle! []
+  (let [{:keys [turn board castling en-passant-target]} @game
+        new-color (other-color turn)]
+    (do
+      (change-turn!)
+      (update-check! new-color)
+      (let [no-possible-moves (not (any-possible-moves? new-color board en-passant-target))
+            is-checkmate (and (@game :in-check) no-possible-moves)]
+        (cond is-checkmate (checkmate! turn)
+              no-possible-moves (draw!)))
+      (update-fen!))))
+
 (defn castle-queenside! []
   (let [{:keys [turn board castling]} @game
         y (if (= turn 'w) 7 0)]
     (do
       (swap! game assoc-in [:board y 2] {:piece-type 'k :color turn :x 2 :y y})
       (swap! game assoc-in [:board y 4] {})
-      (swap! game assoc-in [:board y 3] {:piece-type 'r :color turn :x 2 :y y})
+      (swap! game assoc-in [:board y 3] {:piece-type 'r :color turn :x 3 :y y})
       (swap! game assoc-in [:board y 0] {})
       (swap! game assoc-in [:castling (keyword turn)] (assoc (get castling (keyword turn)) :king-moved true :queenside-rook-moved true :has-castled true))
-      (change-turn!))))
+      (update-post-castle!))))
 
 (defn castle-kingside! []
   (let [{:keys [turn board castling]} @game
         y (if (= turn 'w) 7 0)]
     (do
-      (swap! game assoc-in [:board y 6] {:piece-type 'k :color turn :x 2 :y y})
+      (swap! game assoc-in [:board y 6] {:piece-type 'k :color turn :x 6 :y y})
       (swap! game assoc-in [:board y 4] {})
-      (swap! game assoc-in [:board y 5] {:piece-type 'r :color turn :x 2 :y y})
+      (swap! game assoc-in [:board y 5] {:piece-type 'r :color turn :x 5 :y y})
       (swap! game assoc-in [:board y 7] {})
       (swap! game assoc-in [:castling (keyword turn)] (assoc (get castling (keyword turn)) :king-moved true :kingside-rook-moved true :has-castled true))
-      (change-turn!))))
-
-(defn castle! []
-  (let [{:keys [turn board castling in-check]} @game]
-    (if (can-castle-queenside? turn board castling in-check) (castle-queenside!) (castle-kingside!))))
+      (update-post-castle!))))
 
 (defn update-castling! [active-piece end-x end-y]
   (let [turn (@game :turn) {:keys [color piece-type x]} active-piece]
