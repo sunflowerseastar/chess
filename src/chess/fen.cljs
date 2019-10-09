@@ -35,10 +35,10 @@
     (-> fen (split #" ") (nth 3) algebraic-notation->x-y)))
 
 (defn fen->halfmove [fen]
-  (nth (split fen #" ") 4))
+  (js/parseInt (nth (split fen #" ") 4)))
 
 (defn fen->fullmove [fen]
-  (nth (split fen #" ") 5))
+  (js/parseInt (nth (split fen #" ") 5)))
 
 (defn fen->castling [fen]
   (let [fen-castle (nth (split fen #" ") 2)

@@ -113,8 +113,8 @@
               no-possible-moves-other-turn (draw!)
               (and is-in-check-turn no-possible-moves-turn) (checkmate! other-turn)
               is-in-check-turn (in-check! turn)))
-       (if (>= halfmove 50)
-             (swap! game assoc :fifty-move-rule true) (swap! game assoc :fifty-move-rule false))
+      (if (>= halfmove 50)
+        (swap! game assoc :fifty-move-rule true) (swap! game assoc :fifty-move-rule false))
       (update-fen!))))
 
 (defn activate-piece! [square x y]
@@ -135,13 +135,11 @@
 
 (defn inc-halfmove! []
   (let [increased-halfmove (inc (@game :halfmove))]
-    (do
-      (println "inc " increased-halfmove)
-      (if (>= increased-halfmove 50) (swap! game assoc :fifty-move-rule true) (swap! game assoc :fifty-move-rule false))
-      (swap! game assoc :halfmove increased-halfmove))))
+    (if (>= increased-halfmove 50) (swap! game assoc :fifty-move-rule true) (swap! game assoc :fifty-move-rule false))
+    (swap! game assoc :halfmove increased-halfmove)))
 
 (defn reset-halfmove! []
-  (swap! game assoc :halfmove 0))
+  (swap! game assoc :halfmove 0 :fifty-move-rule false))
 
 (defn update-turn-and-half-fullmoves! [should-inc-halfmove]
   (if (= (@game :turn) 'b) (inc-fullmove!))
@@ -302,11 +300,11 @@
          [:div.button-container
           [:div.button-container [:button {:class "white-bg" :on-click #(start!)} "restart"]]
           [:div.button-container [:button {:class "white-bg reset" :on-click #(reset-game!)} "reset"]]]
-         (do (println "btn " fifty-move-rule threefold-repitition (and (not threefold-repitition) (not fifty-move-rule)))[:div.button-container
-                                                                                                                          [:button {:class (if (not stopped-p) "inactive") :on-click #(start!)} "start"]
-                                                                                                                          [:button {:class (if (not can-castle-queenside) "inactive") :on-click #(castle-queenside!)} "castle Q"]
-                                                                                                                          [:button {:class (if (not can-castle-kingside) "inactive") :on-click #(castle-kingside!)} "castle K"]
-                                                                                                                          [:button {:class (if (and (not threefold-repitition) (not fifty-move-rule)) "inactive") :on-click #(draw!)} "draw"]])))]))
+         [:div.button-container
+          [:button {:class (if (not stopped-p) "inactive") :on-click #(start!)} "start"]
+          [:button {:class (if (not can-castle-queenside) "inactive") :on-click #(castle-queenside!)} "castle Q"]
+          [:button {:class (if (not can-castle-kingside) "inactive") :on-click #(castle-kingside!)} "castle K"]
+          [:button {:class (if (and (not threefold-repitition) (not fifty-move-rule)) "inactive") :on-click #(draw!)} "draw"]]))]))
 
 (defn get-app-element []
   (gdom/getElement "app"))
