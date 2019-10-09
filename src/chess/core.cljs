@@ -68,12 +68,10 @@
   (swap! game assoc :in-check color))
 
 (defn update-check! [color]
-  (do (println "u-c1! " color)
-      (let [is-in-check (in-check? color (@game :board) (@game :en-passant-target))]
-        (do (println "u-c! " is-in-check)
-            (if is-in-check
-              (in-check! color)
-              (in-check! nil))))))
+  (let [is-in-check (in-check? color (@game :board) (@game :en-passant-target))]
+    (if is-in-check
+      (in-check! color)
+      (in-check! nil))))
 
 (defn checkmate! [color]
   (do (println "checkmate! " color)
@@ -98,7 +96,6 @@
             is-in-check-other-turn (in-check? other-turn (@game :board) (@game :en-passant-target))
             no-possible-moves-turn (not (any-possible-moves? turn (@game :board) (@game :en-passant-target)))
             no-possible-moves-other-turn (not (any-possible-moves? other-turn (@game :board) (@game :en-passant-target)))]
-        (println "sgtf! " other-turn is-in-check-turn is-in-check-other-turn no-possible-moves-turn no-possible-moves-other-turn turn other-turn)
         (cond (and is-in-check-other-turn no-possible-moves-other-turn) (checkmate! turn)
               is-in-check-other-turn (in-check! other-turn)
               (and is-in-check-turn no-possible-moves-turn) (checkmate! other-turn)
@@ -182,9 +179,8 @@
         (update-check! new-color)
         (let [no-possible-moves (not (any-possible-moves? new-color (@game :board) (@game :en-passant-target)))
               is-checkmate (and (@game :in-check) no-possible-moves)]
-          (do (println "land-piece! " (@game :in-check) no-possible-moves is-checkmate)
-              (cond is-checkmate (checkmate! landing-color)
-                    no-possible-moves (draw!))))
+          (cond is-checkmate (checkmate! landing-color)
+                no-possible-moves (draw!)))
         (update-fen!)
         (update-threefold-repitition!))))
 
