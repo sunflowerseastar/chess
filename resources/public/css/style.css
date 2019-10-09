@@ -83,12 +83,9 @@ input {
 	bottom: -15px;
 	border-bottom: 5px solid #00ff7c;
 }
-.board.draw:before {
-	top: -15px;
-	bottom: -15px;
-	border-top: 5px solid #6600ff;
-	border-bottom: 5px solid #6600ff;
-	opacity: 1;
+.board.checkmate:after {
+	border-color: white;
+	transition: all 1s cubic-bezier(0.3, 0.8, 0.1, 0.95);
 }
 .board:after {
 	content: '';
@@ -104,6 +101,27 @@ input {
 .board.off-p:after {
 	border-color: white;
 	transition: all 1s cubic-bezier(0.3, 0.8, 0.1, 0.95);
+}
+.board.draw:before,
+.board.draw:after {
+	background: repeating-linear-gradient(
+		-45deg,
+		#aaa,
+		#aaa 12px,
+		#fff 12px,
+		#fff 15px
+	);
+	height: 6px;
+	opacity: 1;
+	transition: all 1s cubic-bezier(0.3, 0.8, 0.1, 0.95);
+	border: none;
+}
+.board.draw:before {
+	top: -15px;
+}
+.board.draw:after {
+	top: auto;
+	bottom: -15px;
 }
 .square {
 	position: relative;
@@ -278,21 +296,21 @@ svg.w {
 	}
 }
 .fen-form {
-  display: flex;
-  flex-direction: row;
+	display: flex;
+	flex-direction: row;
 }
 .fen-form input {
-  flex: 1;
-  display: block;
-  padding: 0 0.5em;
-  color: white;
-  font-size: 10px;
-  background: #333;
-  border: none;
+	flex: 1;
+	display: block;
+	padding: 0 0.5em;
+	color: white;
+	font-size: 10px;
+	background: #333;
+	border: none;
 }
 @media (min-width: 480px) {
 	.fen-form input {
-    padding: 0 1em;
+		padding: 0 1em;
 		font-size: 11px;
 	}
 }
@@ -303,20 +321,20 @@ svg.w {
 }
 @media (min-width: 992px) {
 	.fen-form input {
-    padding: 0 1.6em;
+		padding: 0 1.6em;
 		font-size: 15px;
 	}
 }
 
 .fen-form button {
-  max-width: 70px;
-  margin: 0;
-  color: white;
-  background: #222;
+	max-width: 70px;
+	margin: 0;
+	color: white;
+	background: #222;
 }
 .fen-form button:hover {
-  color: black;
-  background: white;
+	color: black;
+	background: white;
 }
 
 .button-container {

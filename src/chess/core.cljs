@@ -89,7 +89,7 @@
 
 (defn draw! []
   (swap! score assoc :draws (inc (@game :draws)))
-  (swap! game assoc :current-winner "draw" :result :draw :state :stopped :turn nil :threefold-repitition false))
+  (swap! game assoc :current-winner "draw" :result :draw :state :stopped :turn nil :threefold-repitition false :fifty-move-rule false))
 
 (defn set-game-to-fen! [fen]
   (let [turn (symbol (nth (split fen #" ") 1))
@@ -262,6 +262,7 @@
                                         [:li "halfmove: " halfmove]
                                         [:li "fullmove: " fullmove]]]
           [:div.board {:class [(if (= (@game :result) :checkmate) (str current-winner " checkmate") turn)
+                               (if (= (@game :result) :draw) "draw")
                                (if (not-empty active-piece) "is-active")
                                (if stopped-p "stopped-p")
                                (if off-p "off-p")]}
