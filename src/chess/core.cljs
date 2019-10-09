@@ -4,7 +4,17 @@
    [clojure.string :refer [split]]
    [chess.svgs :refer [svg-of]]
    [chess.legal :refer [pawn-two-square-move-from-initial-rank? is-legal? in-check? any-possible-moves? can-castle-kingside? can-castle-queenside?]]
-   [chess.fen :refer [is-fen-valid? castling->fen-castling create-fen create-fen-board-state en-passant-target->fen-en-passant fen->fen-positions fen-positions->board fen->castling fen->en-passant-target]]
+   [chess.fen :refer [castling->fen-castling
+                      create-fen
+                      create-fen-board-state
+                      en-passant-target->fen-en-passant
+                      fen->castling
+                      fen->en-passant-target
+                      fen->fen-positions
+                      fen->fullmove
+                      fen->halfmove
+                      fen-positions->board
+                      is-fen-valid?]]
    [chess.helpers :refer [board-after-move other-color]]
    [reagent.core :as reagent :refer [atom]]))
 
@@ -24,11 +34,14 @@
                          :turn nil
                          :in-check nil
                          :threefold-repitition false
+                         :fifty-move-rule false
                          :result nil
                          :castling {:w {:queenside-rook-moved false :kingside-rook-moved false :king-moved false :has-castled false}
                                     :b {:queenside-rook-moved false :kingside-rook-moved false :king-moved false :has-castled false}}
                          :en-passant-target {:x -1 :y -1}
                          :board (generate-board)
+                         :halfmove 0
+                         :fullmove 1
                          :fen ""
                          :fen-form ""
                          :fen-board-states []})
@@ -82,21 +95,26 @@
   (let [turn (symbol (nth (split fen #" ") 1))
         castling (fen->castling fen)
         en-passant-target (fen->en-passant-target fen)
-        board (fen->fen-positions fen)]
+        board (fen->fen-positions fen)
+        halfmove (fen->halfmove fen)
+        fullmove (fen->fullmove fen)]
     (do
       (swap! game assoc :state :rest :turn turn :castling castling
              :current-winner nil :active-piece {} :threefold-repitition false :result nil
-             :en-passant-target en-passant-target :board board)
+             :en-passant-target en-passant-target :board board :halfmove halfmove :fullmove fullmove)
       (let [other-turn (other-color turn)
             is-in-check-turn (in-check? turn (@game :board) (@game :en-passant-target))
             is-in-check-other-turn (in-check? other-turn (@game :board) (@game :en-passant-target))
             no-possible-moves-turn (not (any-possible-moves? turn (@game :board) (@game :en-passant-target)))
-            no-possible-moves-other-turn (not (any-possible-moves? other-turn (@game :board) (@game :en-passant-target)))]
+            no-possible-moves-other-turn (not (any-possible-moves? other-turn (@game :board) (@game :en-passant-target)))
+            ]
         (cond (and is-in-check-other-turn no-possible-moves-other-turn) (checkmate! turn)
               is-in-check-other-turn (in-check! other-turn)
               no-possible-moves-other-turn (draw!)
               (and is-in-check-turn no-possible-moves-turn) (checkmate! other-turn)
               is-in-check-turn (in-check! turn)))
+       (if (>= halfmove 50)
+             (swap! game assoc :fifty-move-rule true) (swap! game assoc :fifty-move-rule false))
       (update-fen!))))
 
 (defn activate-piece! [square x y]
@@ -112,14 +130,29 @@
 (defn clear-active-piece! []
   (swap! game assoc :state :rest :active-piece {}))
 
-(defn change-turn! []
+(defn inc-fullmove! []
+  (swap! game assoc :fullmove (inc (@game :fullmove))))
+
+(defn inc-halfmove! []
+  (let [increased-halfmove (inc (@game :halfmove))]
+    (do
+      (println "inc " increased-halfmove)
+      (if (>= increased-halfmove 50) (swap! game assoc :fifty-move-rule true) (swap! game assoc :fifty-move-rule false))
+      (swap! game assoc :halfmove increased-halfmove))))
+
+(defn reset-halfmove! []
+  (swap! game assoc :halfmove 0))
+
+(defn update-turn-and-half-fullmoves! [should-inc-halfmove]
+  (if (= (@game :turn) 'b) (inc-fullmove!))
+  (if should-inc-halfmove (inc-halfmove!) (reset-halfmove!))
   (swap! game assoc :turn (other-color (@game :turn))))
 
 (defn update-post-castle! []
   (let [{:keys [turn board castling en-passant-target]} @game
         new-color (other-color turn)]
     (do
-      (change-turn!)
+      (update-turn-and-half-fullmoves! true)
       (update-check! new-color)
       (let [no-possible-moves (not (any-possible-moves? new-color board en-passant-target))
             is-checkmate (and (@game :in-check) no-possible-moves)]
@@ -173,13 +206,14 @@
 
 (defn land-piece! [active-piece end-x end-y]
   (let [landing-color (active-piece :color)
-        new-color (other-color landing-color)]
+        new-color (other-color landing-color)
+        should-increment-halfmove (not (= (active-piece :piece-type) 'p))]
     (do (update-board! active-piece end-x end-y)
         (clear-active-piece!)
         (update-en-passant! active-piece end-x end-y)
         (update-castling! active-piece end-x end-y)
         (update-promotion! active-piece end-x end-y)
-        (change-turn!)
+        (update-turn-and-half-fullmoves! should-increment-halfmove)
         (update-check! new-color)
         (let [no-possible-moves (not (any-possible-moves? new-color (@game :board) (@game :en-passant-target)))
               is-checkmate (and (@game :in-check) no-possible-moves)]
@@ -206,7 +240,7 @@
          [:button {:class "white-bg" :type :submit} "fen"]]))))
 
 (defn main []
-  (let [{:keys [active-piece board castling current-winner draws en-passant-target fen in-check state result threefold-repitition turn]} @game
+  (let [{:keys [active-piece board castling current-winner draws en-passant-target fen fifty-move-rule fullmove halfmove in-check state result threefold-repitition turn]} @game
         {{:keys [w b]} :wins} @score
         stopped-p (= state :stopped)
         off-p (and (= state :stopped) (nil? current-winner))
@@ -227,7 +261,8 @@
                                         [:li "castle availability: " (castling->fen-castling castling)]
                                         [:li "en passant: " (en-passant-target->fen-en-passant en-passant-target)]
                                         [:li "in-check: " in-check]
-                                        ]]
+                                        [:li "halfmove: " halfmove]
+                                        [:li "fullmove: " fullmove]]]
           [:div.board {:class [(if (= (@game :result) :checkmate) (str current-winner " checkmate") turn)
                                (if (not-empty active-piece) "is-active")
                                (if stopped-p "stopped-p")
@@ -267,11 +302,11 @@
          [:div.button-container
           [:div.button-container [:button {:class "white-bg" :on-click #(start!)} "restart"]]
           [:div.button-container [:button {:class "white-bg reset" :on-click #(reset-game!)} "reset"]]]
-         [:div.button-container
-          [:button {:class (if (not stopped-p) "inactive") :on-click #(start!)} "start"]
-          [:button {:class (if (not can-castle-queenside) "inactive") :on-click #(castle-queenside!)} "castle Q"]
-          [:button {:class (if (not can-castle-kingside) "inactive") :on-click #(castle-kingside!)} "castle K"]
-          [:button {:class (if (not threefold-repitition) "inactive") :on-click #(draw!)} "draw"]]))]))
+         (do (println "btn " fifty-move-rule threefold-repitition (and (not threefold-repitition) (not fifty-move-rule)))[:div.button-container
+                                                                                                                          [:button {:class (if (not stopped-p) "inactive") :on-click #(start!)} "start"]
+                                                                                                                          [:button {:class (if (not can-castle-queenside) "inactive") :on-click #(castle-queenside!)} "castle Q"]
+                                                                                                                          [:button {:class (if (not can-castle-kingside) "inactive") :on-click #(castle-kingside!)} "castle K"]
+                                                                                                                          [:button {:class (if (and (not threefold-repitition) (not fifty-move-rule)) "inactive") :on-click #(draw!)} "draw"]])))]))
 
 (defn get-app-element []
   (gdom/getElement "app"))
