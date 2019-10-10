@@ -1,6 +1,16 @@
 body {
+  position: fixed;
+  width: 100%;
 	margin: 0;
 	font-family: 'iosevka ss05', Menlo, 'Andale Mono', monospace;
+}
+body:after {
+  content: "";
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 200px;
+  background: red;
 }
 input {
 	font-family: 'iosevka ss05', Menlo, 'Andale Mono', monospace;
@@ -17,8 +27,19 @@ input {
 	box-sizing: border-box;
 }
 .chess.is-info-page-showing {
+  position: relative;
 	background: black;
 }
+.chess.is-info-page-showing:after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  height: 200px;
+  background: black;
+}
+
 
 .board-container {
 	flex: 1;

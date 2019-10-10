@@ -287,22 +287,17 @@
                              (if is-active-p "active-p")
                              (if (and (= king-x x) (= king-y y)) "in-check")]
                      :style {:grid-column (+ x 1) :grid-row (+ y 1)}
-                     :draggable true ; -> otherwise the browser won't let you drag it
-                     :on-touch-move #(do
-                                       (let [x (-> % .-targetTouches (.item 0) .-clientX)
-                                             y (-> % .-targetTouches (.item 0) .-clientY)]
-                                         (do (println ">> " x y)
-                                             )))
-                     :on-touch-enter #(do
-                                        ;; this won't work...
-                                        (println "touch enter" x y)
-                                        (swap! game update :piece-drag assoc :x x :y y))
-                     :on-drag-enter #(do (println "drag enter" x y) (swap! game update :piece-drag assoc :x x :y y))
+                     :draggable true
                      :on-touch-start #(do (println "touch start")
                                           (if can-activate-p (activate-piece! square x y)))
-                     :on-drag-start #(do (println "drag start")
-                                         (.setData (.-dataTransfer %) "text/plain" "")
-                                         (if can-activate-p (activate-piece! square x y)))
+                     :on-touch-move #(do
+                                       (let [x (-> % .-targetTouches (.item 0) .-clientX)
+                                             y (-> % .-targetTouches (.item 0) .-clientY)
+                                             el (.elementFromPoint js/document x y)
+                                             column (js/parseInt (-> el .-style .-gridColumnStart))
+                                             row (js/parseInt (-> el .-style .-gridRowStart))]
+                                         (do (println ">> " x y column row)
+                                             (swap! game update :piece-drag assoc :x (- column 1) :y (- row 1)))))
                      :on-touch-end #(do (println "touch end" x y (-> @game :piece-drag :x) (-> @game :piece-drag :y))
                                         (let [drag-x (-> @game :piece-drag :x)
                                               drag-y (-> @game :piece-drag :y)
@@ -314,6 +309,10 @@
                                                              (not (in-check? (@game :turn) (board-after-move active-piece drag-x drag-y board) en-passant-target)))
                                                       (land-piece! active-piece drag-x drag-y)
                                                       (clear-active-piece!))))))
+                     :on-drag-start #(do (println "drag start")
+                                         (.setData (.-dataTransfer %) "text/plain" "")
+                                         (if can-activate-p (activate-piece! square x y)))
+                     :on-drag-enter #(do (println "drag enter" x y) (swap! game update :piece-drag assoc :x x :y y))
                      :on-drag-end #(do (println "drag end" x y (-> @game :piece-drag :x) (-> @game :piece-drag :y))
                                        (let [drag-x (-> @game :piece-drag :x)
                                              drag-y (-> @game :piece-drag :y)
