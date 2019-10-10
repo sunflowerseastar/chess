@@ -288,43 +288,34 @@
                              (if (and (= king-x x) (= king-y y)) "in-check")]
                      :style {:grid-column (+ x 1) :grid-row (+ y 1)}
                      :draggable true
-                     :on-touch-start #(do (println "touch start")
-                                          (if can-activate-p (activate-piece! square x y)))
-                     :on-touch-move #(do
-                                       (let [x (-> % .-targetTouches (.item 0) .-clientX)
-                                             y (-> % .-targetTouches (.item 0) .-clientY)
-                                             el (.elementFromPoint js/document x y)
-                                             column (js/parseInt (-> el .-style .-gridColumnStart))
-                                             row (js/parseInt (-> el .-style .-gridRowStart))]
-                                         (do (println ">> " x y column row)
-                                             (swap! game update :piece-drag assoc :x (- column 1) :y (- row 1)))))
-                     :on-touch-end #(do (println "touch end" x y (-> @game :piece-drag :x) (-> @game :piece-drag :y))
-                                        (let [drag-x (-> @game :piece-drag :x)
-                                              drag-y (-> @game :piece-drag :y)
-                                              is-drag-end-active (and (= (active-piece :x) drag-x) (= (active-piece :y) drag-y))]
-                                          (do (println "end2 " drag-x drag-y is-drag-end-active is-active-p is-state-moving-p)
-                                              (cond is-drag-end-active (clear-active-piece!)
-                                                    is-state-moving-p
-                                                    (if (and (is-legal? active-piece drag-x drag-y board en-passant-target)
-                                                             (not (in-check? (@game :turn) (board-after-move active-piece drag-x drag-y board) en-passant-target)))
-                                                      (land-piece! active-piece drag-x drag-y)
-                                                      (clear-active-piece!))))))
-                     :on-drag-start #(do (println "drag start")
-                                         (.setData (.-dataTransfer %) "text/plain" "")
+                     :on-touch-start #(if can-activate-p (activate-piece! square x y))
+                     :on-touch-move #(let [x (-> % .-targetTouches (.item 0) .-clientX)
+                                           y (-> % .-targetTouches (.item 0) .-clientY)
+                                           el (.elementFromPoint js/document x y)
+                                           column (js/parseInt (-> el .-style .-gridColumnStart))
+                                           row (js/parseInt (-> el .-style .-gridRowStart))]
+                                       (swap! game update :piece-drag assoc :x (- column 1) :y (- row 1)))
+                     :on-touch-end #(let [drag-x (-> @game :piece-drag :x)
+                                          drag-y (-> @game :piece-drag :y)
+                                          is-drag-end-active (and (= (active-piece :x) drag-x) (= (active-piece :y) drag-y))]
+                                      (cond is-drag-end-active (clear-active-piece!)
+                                            is-state-moving-p
+                                            (if (and (is-legal? active-piece drag-x drag-y board en-passant-target)
+                                                     (not (in-check? (@game :turn) (board-after-move active-piece drag-x drag-y board) en-passant-target)))
+                                              (land-piece! active-piece drag-x drag-y)
+                                              (clear-active-piece!))))
+                     :on-drag-start #(do (.setData (.-dataTransfer %) "text/plain" "")
                                          (if can-activate-p (activate-piece! square x y)))
-                     :on-drag-enter #(do (println "drag enter" x y) (swap! game update :piece-drag assoc :x x :y y))
-                     :on-drag-end #(do (println "drag end" x y (-> @game :piece-drag :x) (-> @game :piece-drag :y))
-                                       (let [drag-x (-> @game :piece-drag :x)
-                                             drag-y (-> @game :piece-drag :y)
-                                             is-drag-end-active (and (= (active-piece :x) drag-x) (= (active-piece :y) drag-y))]
-                                         (do (println "end2 " drag-x drag-y is-drag-end-active is-active-p is-state-moving-p)
-                                             (cond is-drag-end-active (clear-active-piece!)
-                                                   is-state-moving-p
-                                                   (if (and (is-legal? active-piece drag-x drag-y board en-passant-target)
-                                                            (not (in-check? (@game :turn) (board-after-move active-piece drag-x drag-y board) en-passant-target)))
-                                                     (land-piece! active-piece drag-x drag-y)
-                                                     (clear-active-piece!))))))
-                     :on-drop #(println "on-drop")
+                     :on-drag-enter #(swap! game update :piece-drag assoc :x x :y y)
+                     :on-drag-end #(let [drag-x (-> @game :piece-drag :x)
+                                         drag-y (-> @game :piece-drag :y)
+                                         is-drag-end-active (and (= (active-piece :x) drag-x) (= (active-piece :y) drag-y))]
+                                     (cond is-drag-end-active (clear-active-piece!)
+                                           is-state-moving-p
+                                           (if (and (is-legal? active-piece drag-x drag-y board en-passant-target)
+                                                    (not (in-check? (@game :turn) (board-after-move active-piece drag-x drag-y board) en-passant-target)))
+                                             (land-piece! active-piece drag-x drag-y)
+                                             (clear-active-piece!))))
                      :on-click #(cond can-activate-p (activate-piece! square x y)
                                       is-active-p (clear-active-piece!)
                                       is-state-moving-p
