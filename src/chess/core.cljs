@@ -288,30 +288,34 @@
                              (if (and (= king-x x) (= king-y y)) "in-check")]
                      :style {:grid-column (+ x 1) :grid-row (+ y 1)}
                      :draggable true ; -> otherwise the browser won't let you drag it
-                     :on-touch-move #(do (println "touch over" (-> % .-target))
-                                         (let [target (-> % .-target)]
-                                          (println ) ) )
+                     :on-touch-move #(do
+                                       (let [target (-> % .-target)
+                                             row (-> % .-target .-style .-gridRowStart)
+                                             column (-> % .-target .-style .-gridColumnStart)
+                                             touches (-> % .-targetTouches)]
+                                         (do (println ">> "  (-> touches (.item 0) .-clientX) )
+                                                      )))
                      :on-touch-enter #(do
                                         ;; this won't work...
                                         (println "touch enter" x y)
                                         (swap! game update :piece-drag assoc :x x :y y))
                      :on-drag-enter #(do (println "drag enter" x y) (swap! game update :piece-drag assoc :x x :y y))
                      :on-touch-start #(do (println "touch start")
-                                         (if can-activate-p (activate-piece! square x y)))
+                                          (if can-activate-p (activate-piece! square x y)))
                      :on-drag-start #(do (println "drag start")
                                          (.setData (.-dataTransfer %) "text/plain" "")
                                          (if can-activate-p (activate-piece! square x y)))
                      :on-touch-end #(do (println "touch end" x y (-> @game :piece-drag :x) (-> @game :piece-drag :y))
-                                       (let [drag-x (-> @game :piece-drag :x)
-                                             drag-y (-> @game :piece-drag :y)
-                                             is-drag-end-active (and (= (active-piece :x) drag-x) (= (active-piece :y) drag-y))]
-                                         (do (println "end2 " drag-x drag-y is-drag-end-active is-active-p is-state-moving-p)
-                                             (cond is-drag-end-active (clear-active-piece!)
-                                                   is-state-moving-p
-                                                   (if (and (is-legal? active-piece drag-x drag-y board en-passant-target)
-                                                            (not (in-check? (@game :turn) (board-after-move active-piece drag-x drag-y board) en-passant-target)))
-                                                     (land-piece! active-piece drag-x drag-y)
-                                                     (clear-active-piece!))))))
+                                        (let [drag-x (-> @game :piece-drag :x)
+                                              drag-y (-> @game :piece-drag :y)
+                                              is-drag-end-active (and (= (active-piece :x) drag-x) (= (active-piece :y) drag-y))]
+                                          (do (println "end2 " drag-x drag-y is-drag-end-active is-active-p is-state-moving-p)
+                                              (cond is-drag-end-active (clear-active-piece!)
+                                                    is-state-moving-p
+                                                    (if (and (is-legal? active-piece drag-x drag-y board en-passant-target)
+                                                             (not (in-check? (@game :turn) (board-after-move active-piece drag-x drag-y board) en-passant-target)))
+                                                      (land-piece! active-piece drag-x drag-y)
+                                                      (clear-active-piece!))))))
                      :on-drag-end #(do (println "drag end" x y (-> @game :piece-drag :x) (-> @game :piece-drag :y))
                                        (let [drag-x (-> @game :piece-drag :x)
                                              drag-y (-> @game :piece-drag :y)
