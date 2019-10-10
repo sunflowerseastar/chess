@@ -288,22 +288,6 @@
                              (if (and (= king-x x) (= king-y y)) "in-check")]
                      :style {:grid-column (+ x 1) :grid-row (+ y 1)}
                      :draggable true
-                     :on-touch-start #(if can-activate-p (activate-piece! square x y))
-                     :on-touch-move #(let [x (-> % .-targetTouches (.item 0) .-clientX)
-                                           y (-> % .-targetTouches (.item 0) .-clientY)
-                                           el (.elementFromPoint js/document x y)
-                                           column (js/parseInt (-> el .-style .-gridColumnStart))
-                                           row (js/parseInt (-> el .-style .-gridRowStart))]
-                                       (swap! game update :piece-drag assoc :x (- column 1) :y (- row 1)))
-                     :on-touch-end #(let [drag-x (-> @game :piece-drag :x)
-                                          drag-y (-> @game :piece-drag :y)
-                                          is-drag-end-active (and (= (active-piece :x) drag-x) (= (active-piece :y) drag-y))]
-                                      (cond is-drag-end-active (clear-active-piece!)
-                                            is-state-moving-p
-                                            (if (and (is-legal? active-piece drag-x drag-y board en-passant-target)
-                                                     (not (in-check? (@game :turn) (board-after-move active-piece drag-x drag-y board) en-passant-target)))
-                                              (land-piece! active-piece drag-x drag-y)
-                                              (clear-active-piece!))))
                      :on-drag-start #(do (.setData (.-dataTransfer %) "text/plain" "")
                                          (if can-activate-p (activate-piece! square x y)))
                      :on-drag-enter #(swap! game update :piece-drag assoc :x x :y y)
