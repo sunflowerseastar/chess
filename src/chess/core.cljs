@@ -289,12 +289,10 @@
                      :style {:grid-column (+ x 1) :grid-row (+ y 1)}
                      :draggable true ; -> otherwise the browser won't let you drag it
                      :on-touch-move #(do
-                                       (let [target (-> % .-target)
-                                             row (-> % .-target .-style .-gridRowStart)
-                                             column (-> % .-target .-style .-gridColumnStart)
-                                             touches (-> % .-targetTouches)]
-                                         (do (println ">> "  (-> touches (.item 0) .-clientX) )
-                                                      )))
+                                       (let [x (-> % .-targetTouches (.item 0) .-clientX)
+                                             y (-> % .-targetTouches (.item 0) .-clientY)]
+                                         (do (println ">> " x y)
+                                             )))
                      :on-touch-enter #(do
                                         ;; this won't work...
                                         (println "touch enter" x y)
