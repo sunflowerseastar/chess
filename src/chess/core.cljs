@@ -66,12 +66,15 @@
         (swap! game assoc :fen fen :fen-form fen)
         (do (println "update board states" fens-pointer (count fens))
             (if-not (= fens-pointer (- (count fens) 1))
-              (do (println "pointer doesn't match, clobber fens and fen-board-states after pointer")
-                  (let [fens-to-keep (vec (take (inc fens-pointer) fens))
-                        fen-board-states-to-keep (vec (take (inc fens-pointer) fens))]
-                    (println "fens-to-keep" fens-to-keep)
-                    (swap! game assoc :fens fens)
-                    (swap! game assoc :fen-board-states fen-board-states-to-keep)))
+              (let [fens-to-keep (vec (take (inc fens-pointer) fens))
+                    fen-board-states-to-keep (vec (take (inc fens-pointer) fens))]
+                (do
+                  (println "pointer doesn't match, clobber fens and fen-board-states after pointer")
+                  (println "fens-to-keep" fens-to-keep fen-board-states-to-keep)
+                  (println "total" (conj fens-to-keep fen) (conj fen-board-states fen))
+                  (swap! game assoc :fens (conj fens-to-keep fen))
+                  (swap! game assoc :fen-board-states (conj fen-board-states fen))
+                  (swap! game assoc :fens-pointer (count fens-to-keep))))
               (do (println "add state and bump pointer")
                   (swap! game assoc :fens-pointer (inc fens-pointer))
                   (swap! game update :fens conj fen)
@@ -109,7 +112,7 @@
   (swap! score assoc :draws (inc (@game :draws)))
   (swap! game assoc :current-winner "draw" :result :draw :state :stopped :turn nil :threefold-repitition false :fifty-move-rule false))
 
-(defn set-game-to-fen! [fen is-soft-set]
+(defn set-game-to-fen! [fen]
   (let [turn (symbol (nth (split fen #" ") 1))
         castling (fen->castling fen)
         en-passant-target (fen->en-passant-target fen)
@@ -131,8 +134,7 @@
               (and is-in-check-turn no-possible-moves-turn) (checkmate! other-turn)
               is-in-check-turn (in-check! turn)))
       (if (>= halfmove 50)
-        (swap! game assoc :fifty-move-rule true) (swap! game assoc :fifty-move-rule false))
-      (if-not is-soft-set (update-fen!)))))
+        (swap! game assoc :fifty-move-rule true) (swap! game assoc :fifty-move-rule false)))))
 
 (defn activate-piece! [square x y]
   (swap! game assoc :state :moving
@@ -245,7 +247,9 @@
               (.preventDefault e)
               (let [fen (@game :fen-form)]
                 (if (is-fen-valid? fen)
-                  (set-game-to-fen! fen false))))]
+                  (do
+                    (set-game-to-fen! fen)
+                    (update-fen!)))))]
       (fn []
         [:form.fen-form {:on-submit #(on-submit %)}
          [:input {:type :text :name :fen
@@ -263,10 +267,10 @@
                   is-right (= key "ArrowRight")]
               (cond is-left (let [fens (@game :fens)
                                   fens-pointer (@game :fens-pointer)
-                                  previous-fen (nth fens (- (count fens) 2))]
+                                  previous-fen (nth fens (- fens-pointer 1))]
                               (do (println "yea left" fens-pointer previous-fen)
                                   (swap! game assoc :fens-pointer (dec fens-pointer))
-                                  (set-game-to-fen! previous-fen true)))
+                                  (set-game-to-fen! previous-fen)))
                     is-right (println "yea right"))))]
     (create-class
      {:component-did-mount #(do (println "cdm")
