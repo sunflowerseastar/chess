@@ -132,7 +132,8 @@
               is-in-check-other-turn (in-check! other-turn)
               no-possible-moves-other-turn (draw!)
               (and is-in-check-turn no-possible-moves-turn) (checkmate! other-turn)
-              is-in-check-turn (in-check! turn)))
+              is-in-check-turn (in-check! turn)
+              :else (in-check! nil)))
       (if (>= halfmove 50)
         (swap! game assoc :fifty-move-rule true) (swap! game assoc :fifty-move-rule false)))))
 
@@ -271,7 +272,14 @@
                               (do (println "yea left" fens-pointer previous-fen)
                                   (swap! game assoc :fens-pointer (dec fens-pointer))
                                   (set-game-to-fen! previous-fen)))
-                    is-right (println "yea right"))))]
+                    is-right (let [fens (@game :fens)
+                                   fens-pointer (@game :fens-pointer)]
+                               (do (println "yea right")
+                                   (if (> (- (count fens) 1) fens-pointer)
+                                     (do
+                                       (println "yep advance fen")
+                                       (swap! game assoc :fens-pointer (inc fens-pointer))
+                                       (set-game-to-fen! (nth fens (+ fens-pointer 1))))))))))]
     (create-class
      {:component-did-mount #(do (println "cdm")
                                 (.addEventListener js/document "keydown" go-back-or-forward))
