@@ -43,9 +43,11 @@
                          :board (generate-board)
                          :halfmove 0
                          :fullmove 1
-                         :fen ""
                          :fen-form ""
-                         :fen-board-states []})
+                         :fen ""
+                         :fens []
+                         :fen-board-states []
+                         :fens-pointer -1})
 
 (def score-initial-state {:wins {:w 0 :b 0}
                           :draws 0})
@@ -55,10 +57,25 @@
 (def ui (atom {:is-info-page-showing false}))
 
 (defn update-fen! []
-  (let [fen-board-state (create-fen-board-state @game)
-        fen (create-fen @game)]
-    (swap! game assoc :fen fen :fen-form fen)
-    (swap! game update :fen-board-states conj fen-board-state)))
+  (do (println "update-fen!")
+      (let [fen-board-state (create-fen-board-state @game)
+            fen (create-fen @game)
+            fens (@game :fens)
+            fen-board-states (@game :fen-board-states)
+            fens-pointer (@game :fens-pointer)]
+        (swap! game assoc :fen fen :fen-form fen)
+        (do (println "update board states" fens-pointer (count fens))
+            (if-not (= fens-pointer (- (count fens) 1))
+              (do (println "pointer doesn't match, clobber fens and fen-board-states after pointer")
+                  (let [fens-to-keep (vec (take (inc fens-pointer) fens))
+                        fen-board-states-to-keep (vec (take (inc fens-pointer) fens))]
+                    (println "fens-to-keep" fens-to-keep)
+                    (swap! game assoc :fens fens)
+                    (swap! game assoc :fen-board-states fen-board-states-to-keep)))
+              (do (println "add state and bump pointer")
+                  (swap! game assoc :fens-pointer (inc fens-pointer))
+                  (swap! game update :fens conj fen)
+                  (swap! game update :fen-board-states conj fen-board-state)))))))
 
 (defn update-threefold-repitition! []
   (let [fbs (@game :fen-board-states)
@@ -92,7 +109,7 @@
   (swap! score assoc :draws (inc (@game :draws)))
   (swap! game assoc :current-winner "draw" :result :draw :state :stopped :turn nil :threefold-repitition false :fifty-move-rule false))
 
-(defn set-game-to-fen! [fen]
+(defn set-game-to-fen! [fen is-soft-set]
   (let [turn (symbol (nth (split fen #" ") 1))
         castling (fen->castling fen)
         en-passant-target (fen->en-passant-target fen)
@@ -107,8 +124,7 @@
             is-in-check-turn (in-check? turn (@game :board) (@game :en-passant-target))
             is-in-check-other-turn (in-check? other-turn (@game :board) (@game :en-passant-target))
             no-possible-moves-turn (not (any-possible-moves? turn (@game :board) (@game :en-passant-target)))
-            no-possible-moves-other-turn (not (any-possible-moves? other-turn (@game :board) (@game :en-passant-target)))
-            ]
+            no-possible-moves-other-turn (not (any-possible-moves? other-turn (@game :board) (@game :en-passant-target)))]
         (cond (and is-in-check-other-turn no-possible-moves-other-turn) (checkmate! turn)
               is-in-check-other-turn (in-check! other-turn)
               no-possible-moves-other-turn (draw!)
@@ -116,7 +132,7 @@
               is-in-check-turn (in-check! turn)))
       (if (>= halfmove 50)
         (swap! game assoc :fifty-move-rule true) (swap! game assoc :fifty-move-rule false))
-      (update-fen!))))
+      (if-not is-soft-set (update-fen!)))))
 
 (defn activate-piece! [square x y]
   (swap! game assoc :state :moving
@@ -224,13 +240,12 @@
 (defn fen-form [initial-fen]
   (let [ifen (@game :fen)
         xform-state (reagent/atom {:fen ifen})
-        form-state (reagent/atom {:fen ifen})
-        ]
+        form-state (reagent/atom {:fen ifen})]
     (letfn [(on-submit [e]
               (.preventDefault e)
               (let [fen (@game :fen-form)]
                 (if (is-fen-valid? fen)
-                  (set-game-to-fen! fen))))]
+                  (set-game-to-fen! fen false))))]
       (fn []
         [:form.fen-form {:on-submit #(on-submit %)}
          [:input {:type :text :name :fen
@@ -246,7 +261,12 @@
             (let [key (.-key e)
                   is-left (= key "ArrowLeft")
                   is-right (= key "ArrowRight")]
-              (cond is-left (println "yea left")
+              (cond is-left (let [fens (@game :fens)
+                                  fens-pointer (@game :fens-pointer)
+                                  previous-fen (nth fens (- (count fens) 2))]
+                              (do (println "yea left" fens-pointer previous-fen)
+                                  (swap! game assoc :fens-pointer (dec fens-pointer))
+                                  (set-game-to-fen! previous-fen true)))
                     is-right (println "yea right"))))]
     (create-class
      {:component-did-mount #(do (println "cdm")
