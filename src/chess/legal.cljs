@@ -99,6 +99,28 @@
         opponents-checking-ps (map #(is-legal? % (king :x) (king :y) board en-passant-target) opponents)]
     (some true? opponents-checking-ps)))
 
+(defn get-move
+  "Take a color, board, and en-passant-target, and return a move."
+  [color board en-passant-target]
+  (let [flat-board (flatten board)
+        pieces (vec (filter #(= (% :color) color) flat-board))
+        all-squares (for [x (range 0 8) y (range 0 8)] [x y])
+        all-legal-moves-not-in-check (flatten
+                                      (map #(map
+                                             (fn [[x y]]
+                                               (let [destination-piece (get-piece x y board)
+                                                     capture (destination-piece :piece-type)]
+                                                 (if (and (is-legal? % x y board en-passant-target)
+                                                          (not (in-check? color (board-after-move % x y board) en-passant-target)))
+                                                   {:piece % :end-x x :end-y y :capture capture})))
+                                             all-squares)
+                                           pieces))]
+    (let [moves (filter #(not (nil? %)) all-legal-moves-not-in-check)
+          captures (filter #(not (nil? (% :capture))) moves)]
+      (if (not-empty captures)
+        (first captures)
+        (rand-nth (filter #(not (nil? %)) all-legal-moves-not-in-check))))))
+
 (defn any-possible-moves?
   "Take a color, board, and en-passant-target, and return true if a move can end not in check."
   [color board en-passant-target]

@@ -3,7 +3,13 @@
    [goog.dom :as gdom]
    [clojure.string :refer [split]]
    [chess.svgs :refer [svg-of]]
-   [chess.legal :refer [pawn-two-square-move-from-initial-rank? is-legal? in-check? any-possible-moves? can-castle-kingside? can-castle-queenside?]]
+   [chess.legal :refer [any-possible-moves?
+                        can-castle-kingside?
+                        can-castle-queenside?
+                        get-move
+                        in-check?
+                        is-legal?
+                        pawn-two-square-move-from-initial-rank?]]
    [chess.fen :refer [castling->fen-castling
                       create-fen
                       create-fen-board-state
@@ -234,6 +240,10 @@
         (update-fen!)
         (update-threefold-repitition!))))
 
+(defn make-black-move! []
+  (let [move (get-move 'b (@game :board) (@game :en-passant-target))]
+    (land-piece! (move :piece) (move :end-x) (move :end-y))))
+
 (defn fen-form [initial-fen]
   (let [ifen (@game :fen)
         xform-state (reagent/atom {:fen ifen})
@@ -273,6 +283,7 @@
                                      (set-game-to-fen! (nth fens (+ fens-pointer 1)))))))))]
     (create-class
      {:component-did-mount #(.addEventListener js/document "keydown" go-back-or-forward)
+      :component-did-update #(when (and (= (@game :state) :rest) (= (@game :turn) 'b)) (make-black-move!))
       :component-will-unmount #(.removeEventListener js/document "keydown" go-back-or-forward)
       :reagent-render (fn [this]
                         (let [{:keys [active-piece board castling current-winner draws en-passant-target fen fifty-move-rule fullmove halfmove in-check state result threefold-repitition turn]} @game
