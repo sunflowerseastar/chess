@@ -388,7 +388,7 @@ button {
 	font-size: 12px;
 	font-weight: bold;
 	background: white;
-	border: 1px transparent;
+	border: 1px solid transparent;
 }
 @media (min-width: 480px) {
 	button {
