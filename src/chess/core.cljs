@@ -240,10 +240,6 @@
         (update-fen!)
         (update-threefold-repitition!))))
 
-(defn make-black-move! []
-  (let [move (get-move 'b (@game :board) (@game :en-passant-target))]
-    (land-piece! (move :piece) (move :end-x) (move :end-y))))
-
 (defn fen-form [initial-fen]
   (let [ifen (@game :fen)
         xform-state (reagent/atom {:fen ifen})
@@ -262,15 +258,22 @@
                   :on-change #(swap! game assoc :fen-form (-> % .-target .-value))}]
          [:button {:class "white-bg" :type :submit} "fen"]]))))
 
+(defn make-turn []
+  (let [{:keys [board en-passant-target turn]} @game]
+    (when (not= (@game :state) :stopped)
+      (let [move (get-move turn board en-passant-target)]
+        (land-piece! (move :piece) (move :end-x) (move :end-y))))))
+
 (defn main []
-  (letfn [(go-back-or-forward [e]
+  (letfn [(keyboard-listeners [e]
             (let [key (.-key e)
                   shift (.-shiftKey e)
                   ctrl (.-ctrlKey e)
                   cmd (.-cmdKey e)
                   meta (.-metaKey e)
                   is-left (or (= key "ArrowLeft") (and meta (= key "z") (not shift)) (and ctrl (= key "z") (not shift)))
-                  is-right (or (= key "ArrowRight") (and meta shift (= key "z")) (and ctrl shift (= key "z")))]
+                  is-right (or (= key "ArrowRight") (and meta shift (= key "z")) (and ctrl shift (= key "z")))
+                  is-space (= (.-keyCode e) 32)]
               (cond is-left (let [fens (@game :fens)
                                   fens-pointer (@game :fens-pointer)]
                               (when (> fens-pointer 0)
@@ -280,11 +283,11 @@
                                    fens-pointer (@game :fens-pointer)]
                                (when (> (- (count fens) 1) fens-pointer)
                                  (do (swap! game assoc :fens-pointer (inc fens-pointer))
-                                     (set-game-to-fen! (nth fens (+ fens-pointer 1)))))))))]
+                                     (set-game-to-fen! (nth fens (+ fens-pointer 1))))))
+                    is-space (make-turn))))]
     (create-class
-     {:component-did-mount #(.addEventListener js/document "keydown" go-back-or-forward)
-      :component-did-update #(when (and (= (@game :state) :rest) (= (@game :turn) 'b)) (make-black-move!))
-      :component-will-unmount #(.removeEventListener js/document "keydown" go-back-or-forward)
+     {:component-did-mount #(.addEventListener js/document "keydown" keyboard-listeners)
+      :component-will-unmount #(.removeEventListener js/document "keydown" keyboard-listeners)
       :reagent-render (fn [this]
                         (let [{:keys [active-piece board castling current-winner draws en-passant-target fen fifty-move-rule fullmove halfmove in-check state result threefold-repitition turn]} @game
                               {{:keys [w b]} :wins} @score
