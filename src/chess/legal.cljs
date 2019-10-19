@@ -125,10 +125,8 @@
 
 
 (defn algebraic-move->board-move [algebraic-move turn board]
-  (println algebraic-move)
   (let [is-castle-q (re-find #"0-0-0" algebraic-move)
         is-castle-k (re-find #"0-0" algebraic-move)]
-    (println "ambm" (str is-castle-q is-castle-k))
     (cond is-castle-q {:is-castle 'q}
           is-castle-k {:is-castle 'k}
           :else (let [s (split algebraic-move #"x|-")
@@ -142,10 +140,7 @@
   (let [matches-in-openings-table (filter #(= (:board-state %) fen-board-state) openings-table)
         first-match (first matches-in-openings-table)
         next-algebraic-move (:next-algebraic-move first-match)
-        board-move (algebraic-move->board-move next-algebraic-move turn board)]
-    (println "next-algebraic-move" next-algebraic-move)
-    (println "board-move" next-algebraic-move board-move)
-    ;; (println "gotm match2: " (algebraic-move->board-move next-algebraic-move))
+        board-move (if next-algebraic-move (algebraic-move->board-move next-algebraic-move turn board) nil)]
     board-move))
 
 (defn any-possible-moves?

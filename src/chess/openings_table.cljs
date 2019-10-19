@@ -1,7 +1,6 @@
 (ns chess.openings-table)
 
-(def openings-table #{
-                      {:board-state "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -" :name "sicilian" :next-algebraic-move "e2-e4"}
+(def openings-table #{{:board-state "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -" :name "sicilian" :next-algebraic-move "e2-e4"}
                       {:board-state "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3" :name "sicilian" :next-algebraic-move "c7-c5"}
                       {:board-state "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6" :name "sicilian" :next-algebraic-move "f2-f4"}
                       {:board-state "rnbqkbnr/pp1ppppp/8/2p5/4PP2/8/PPPP2PP/RNBQKBNR b KQkq f3" :name "sicilian" :next-algebraic-move "e7-e6"}
