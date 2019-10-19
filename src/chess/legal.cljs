@@ -124,24 +124,28 @@
         (rand-nth (filter #(not (nil? %)) all-legal-moves-not-in-check))))))
 
 
-(defn algebraic-move->board-move [algebraic-move turn]
+(defn algebraic-move->board-move [algebraic-move turn board]
   (let [s (split algebraic-move #"x|-")
-        [start-xy end-xy] (map algebraic-notation->x-y s) ]
-    (if algebraic-move {:piece {:color turn, :piece-type 'p, :x (:x start-xy), :y (:y start-xy)}, :end-x (:x end-xy), :end-y (:y end-xy), :capture nil} nil)))
+        [start-xy end-xy] (map algebraic-notation->x-y s)
+        start-x (:x start-xy)
+        start-y (:y start-xy)]
+    {:piece {:color turn, :piece-type ((get-piece start-x start-y board) :piece-type),:x start-x, :y start-y},
+     :end-x (:x end-xy), :end-y (:y end-xy), :capture nil}))
 
-(defn get-openings-table-move-x [fen-board-state turn]
+(defn get-openings-table-move-x [fen-board-state turn board]
   (->> fen-board-state
        (filter #(= (:board-state %) fen-board-state))
        first
        :next-algebraic-move
-       (algebraic-move->board-move turn)))
+       (algebraic-move->board-move turn board)))
 
-(defn get-openings-table-move [fen-board-state turn]
+(defn get-openings-table-move [fen-board-state turn board]
   (let [matches-in-openings-table (filter #(= (:board-state %) fen-board-state) openings-table)
         first-match (first matches-in-openings-table)
         next-algebraic-move (:next-algebraic-move first-match)
-        board-move (algebraic-move->board-move next-algebraic-move turn)]
-    (println "move found in openings table: " next-algebraic-move board-move)
+        board-move (algebraic-move->board-move next-algebraic-move turn board)]
+    (println "next-algebraic-move" next-algebraic-move)
+    (println "board-move" next-algebraic-move board-move)
     ;; (println "gotm match2: " (algebraic-move->board-move next-algebraic-move))
     board-move))
 

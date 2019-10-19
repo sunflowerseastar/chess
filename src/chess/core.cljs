@@ -262,7 +262,7 @@
 (defn make-move []
   (let [{:keys [board en-passant-target turn]} @game]
     (when (not= (@game :state) :stopped)
-      (let [openings-table-move (get-openings-table-move (game->fen-board-state @game) turn)
+      (let [openings-table-move (get-openings-table-move (game->fen-board-state @game) turn board)
             move (if openings-table-move openings-table-move (get-regular-move turn board en-passant-target))]
         (land-piece! (move :piece) (move :end-x) (move :end-y))))))
 
