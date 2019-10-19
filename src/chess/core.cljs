@@ -264,7 +264,6 @@
     (when (not= (@game :state) :stopped)
       (let [openings-table-move (get-openings-table-move (game->fen-board-state @game))
             move (if openings-table-move openings-table-move (get-regular-move turn board en-passant-target))]
-        ;; (println "move:" openings-table-move move)
         (land-piece! (move :piece) (move :end-x) (move :end-y))))))
 
 (defn main []

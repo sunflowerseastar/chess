@@ -1,7 +1,7 @@
 (ns chess.fen
   (:require
    [clojure.string :refer [index-of join lower-case split upper-case]]
-   [chess.helpers :refer [is-lower-case-p]]
+   [chess.helpers :refer [algebraic-notation->x-y is-lower-case-p]]
    [chess.legal :refer [pawn-two-square-move-from-initial-rank? is-legal? in-check? any-possible-moves? can-castle-queenside?]]))
 
 (defn is-fen-valid? [fen] true)
@@ -26,11 +26,6 @@
 
 (defn fen->board [fen]
   (-> fen fen->fen-positions fen-positions->board))
-
-(defn algebraic-notation->x-y [square]
-  (let [x (->> (re-find #"\w" square) (index-of "abcdefgh"))
-        y (- 8 (re-find #"\d" square))]
-    (if (and y x) {:x x :y y} {:x -1 :y -1})))
 
 (defn fen->en-passant-target [fen]
   (let [fen-en-passant (nth (split fen #" ") 3)
@@ -112,7 +107,6 @@
         fen-rank (board->fen-rank board)
         fen-castling (castling->fen-castling castling)
         en-passant-algebraic (en-passant-target->fen-en-passant en-passant-target)]
-    ;; (println fen-rank turn fen-castling)
     (str fen-rank " " turn " " fen-castling " " en-passant-algebraic)))
 
 (defn create-fen [{:keys [halfmove fullmove] :as game}]

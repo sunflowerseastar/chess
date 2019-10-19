@@ -1,7 +1,7 @@
 (ns chess.legal
   (:require
-   [chess.fen :refer [algebraic-notation->x-y]]
-   [chess.helpers :refer [board-after-move my-inclusive-range other-color]]
+   [chess.helpers :refer [algebraic-notation->x-y board-after-move my-inclusive-range other-color]]
+   [chess.openings-table :refer [openings-table]]
    [clojure.string :refer [split]]))
 
 (defn get-piece [x y board]
@@ -123,22 +123,25 @@
         (first captures)
         (rand-nth (filter #(not (nil? %)) all-legal-moves-not-in-check))))))
 
-(def t1 #{
-          {:board-state "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3" :name "sicilian" :next-algebraic-move "c7-c5"}
-          })
 
 (defn algebraic-move->board-move [algebraic-move]
   (let [s (split algebraic-move #"x|-")
         [start-xy end-xy] (map algebraic-notation->x-y s) ]
     (if algebraic-move {:piece {:color 'b, :piece-type 'p, :x (:x start-xy), :y (:y start-xy)}, :end-x (:x end-xy), :end-y (:y end-xy), :capture nil} nil)))
 
+(defn get-openings-table-move-x [fen-board-state]
+  (->> fen-board-state
+       (filter #(= (:board-state %) fen-board-state))
+       first
+       :next-algebraic-move
+       algebraic-move->board-move))
+
 (defn get-openings-table-move [fen-board-state]
-  (let [opening-matches (filter #(= (:board-state %) fen-board-state) t1)
-        first-match (first opening-matches)
+  (let [matches-in-openings-table (filter #(= (:board-state %) fen-board-state) openings-table)
+        first-match (first matches-in-openings-table)
         next-algebraic-move (:next-algebraic-move first-match)]
-    (println "gotm:" fen-board-state)
-    (println "gotm match: " next-algebraic-move)
-    (println "gotm match2: " (algebraic-move->board-move next-algebraic-move))
+    (println "move found in openings table: " next-algebraic-move)
+    ;; (println "gotm match2: " (algebraic-move->board-move next-algebraic-move))
     (algebraic-move->board-move next-algebraic-move)))
 
 (defn any-possible-moves?
