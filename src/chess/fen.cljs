@@ -22,7 +22,10 @@
                       split-positions))))
 
 (defn fen->fen-positions [fen]
-  (-> fen (split #" ") (nth 0) fen-positions->board))
+  (-> fen (split #" ") (nth 0)))
+
+(defn fen->board [fen]
+  (-> fen fen->fen-positions fen-positions->board))
 
 (defn algebraic-notation->x-y [square]
   (let [x (->> (re-find #"\w" square) (index-of "abcdefgh"))
@@ -104,15 +107,16 @@
             rank (- 8 y)]
         (str file rank))))
 
-(defn create-fen-board-state [game]
-  (let [{:keys [board castling current-winner en-passant-target in-check state turn]} game
+(defn game->fen-board-state [game]
+  (let [{:keys [board castling en-passant-target turn]} game
         fen-rank (board->fen-rank board)
         fen-castling (castling->fen-castling castling)
         en-passant-algebraic (en-passant-target->fen-en-passant en-passant-target)]
+    (println fen-rank turn fen-castling)
     (str fen-rank " " turn " " fen-castling " " en-passant-algebraic)))
 
 (defn create-fen [{:keys [halfmove fullmove] :as game}]
-  (let [fen-board-state (create-fen-board-state game)
+  (let [fen-board-state (game->fen-board-state game)
         half-move-clock 0
         full-move-clock 1]
     (str fen-board-state " " halfmove " " fullmove)))

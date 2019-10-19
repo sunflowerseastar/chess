@@ -12,11 +12,11 @@
                         pawn-two-square-move-from-initial-rank?]]
    [chess.fen :refer [castling->fen-castling
                       create-fen
-                      create-fen-board-state
+                      game->fen-board-state
                       en-passant-target->fen-en-passant
                       fen->castling
                       fen->en-passant-target
-                      fen->fen-positions
+                      fen->board
                       fen->fullmove
                       fen->halfmove
                       fen-positions->board
@@ -63,7 +63,7 @@
 (def ui (atom {:is-info-page-showing false}))
 
 (defn update-fen! []
-  (let [fen-board-state (create-fen-board-state @game)
+  (let [fen-board-state (game->fen-board-state @game)
         fen (create-fen @game)
         fens (@game :fens)
         fen-board-states (@game :fen-board-states)
@@ -117,7 +117,7 @@
   (let [turn (symbol (nth (split fen #" ") 1))
         castling (fen->castling fen)
         en-passant-target (fen->en-passant-target fen)
-        board (fen->fen-positions fen)
+        board (fen->board fen)
         halfmove (fen->halfmove fen)
         fullmove (fen->fullmove fen)]
     (do (swap! game assoc :state :rest :turn turn :castling castling
@@ -258,10 +258,11 @@
                   :on-change #(swap! game assoc :fen-form (-> % .-target .-value))}]
          [:button {:class "white-bg" :type :submit} "fen"]]))))
 
-(defn make-turn []
+(defn make-move []
   (let [{:keys [board en-passant-target turn]} @game]
     (when (not= (@game :state) :stopped)
       (let [move (get-move turn board en-passant-target)]
+        (println "move:" move)
         (land-piece! (move :piece) (move :end-x) (move :end-y))))))
 
 (defn main []
@@ -284,7 +285,7 @@
                                (when (> (- (count fens) 1) fens-pointer)
                                  (do (swap! game assoc :fens-pointer (inc fens-pointer))
                                      (set-game-to-fen! (nth fens (+ fens-pointer 1))))))
-                    is-space (make-turn))))]
+                    is-space (make-move))))]
     (create-class
      {:component-did-mount #(.addEventListener js/document "keydown" keyboard-listeners)
       :component-will-unmount #(.removeEventListener js/document "keydown" keyboard-listeners)

@@ -99,7 +99,7 @@
         opponents-checking-ps (map #(is-legal? % (king :x) (king :y) board en-passant-target) opponents)]
     (some true? opponents-checking-ps)))
 
-(defn get-move
+(defn get-regular-move
   "Take a color, board, and en-passant-target, and return a move."
   [color board en-passant-target]
   (let [flat-board (flatten board)
@@ -120,6 +120,16 @@
       (if (not-empty captures)
         (first captures)
         (rand-nth (filter #(not (nil? %)) all-legal-moves-not-in-check))))))
+
+(def t1 {:board-state "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1" :name "sicilian" :next-move "c7-c5"})
+
+(defn get-openers-table-move [turn board en-passant-target]
+  ;; (let [fbs (game->fen-board-state board)])
+  nil)
+
+(defn get-move [turn board en-passant-target]
+  (let [openers-table-move (get-openers-table-move turn board en-passant-target)]
+    (if openers-table-move openers-table-move (get-regular-move turn board en-passant-target))))
 
 (defn any-possible-moves?
   "Take a color, board, and en-passant-target, and return true if a move can end not in check."
