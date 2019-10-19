@@ -6,7 +6,7 @@
    [chess.legal :refer [any-possible-moves?
                         can-castle-kingside?
                         can-castle-queenside?
-                        get-openers-table-move
+                        get-openings-table-move
                         get-regular-move
                         in-check?
                         is-legal?
@@ -262,9 +262,9 @@
 (defn make-move []
   (let [{:keys [board en-passant-target turn]} @game]
     (when (not= (@game :state) :stopped)
-      (let [openers-table-move (get-openers-table-move (game->fen-board-state @game))
-            move (if openers-table-move openers-table-move (get-regular-move turn board en-passant-target))]
-        ;; (println "move:" openers-table-move move)
+      (let [openings-table-move (get-openings-table-move (game->fen-board-state @game))
+            move (if openings-table-move openings-table-move (get-regular-move turn board en-passant-target))]
+        ;; (println "move:" openings-table-move move)
         (land-piece! (move :piece) (move :end-x) (move :end-y))))))
 
 (defn main []
