@@ -125,21 +125,20 @@
 
 
 (defn algebraic-move->board-move [algebraic-move turn board]
-  (let [s (split algebraic-move #"x|-")
-        [start-xy end-xy] (map algebraic-notation->x-y s)
-        start-x (:x start-xy)
-        start-y (:y start-xy)]
-    {:piece {:color turn, :piece-type ((get-piece start-x start-y board) :piece-type),:x start-x, :y start-y},
-     :end-x (:x end-xy), :end-y (:y end-xy), :capture nil}))
+  (println algebraic-move)
+  (let [is-castle-q (re-find #"0-0-0" algebraic-move)
+        is-castle-k (re-find #"0-0" algebraic-move)]
+    (println "ambm" (str is-castle-q is-castle-k))
+    (cond is-castle-q {:is-castle 'q}
+          is-castle-k {:is-castle 'k}
+          :else (let [s (split algebraic-move #"x|-")
+                      [start-xy end-xy] (map algebraic-notation->x-y s)
+                      start-x (:x start-xy)
+                      start-y (:y start-xy)]
+                  {:is-castle nil :piece {:color turn, :piece-type ((get-piece start-x start-y board) :piece-type),:x start-x, :y start-y},
+                   :end-x (:x end-xy), :end-y (:y end-xy), :capture nil}))))
 
-(defn get-openings-table-move-x [fen-board-state turn board]
-  (->> fen-board-state
-       (filter #(= (:board-state %) fen-board-state))
-       first
-       :next-algebraic-move
-       (algebraic-move->board-move turn board)))
-
-(defn get-openings-table-move [fen-board-state turn board]
+(defn get-openings-table-move-or-castle [fen-board-state turn board]
   (let [matches-in-openings-table (filter #(= (:board-state %) fen-board-state) openings-table)
         first-match (first matches-in-openings-table)
         next-algebraic-move (:next-algebraic-move first-match)
