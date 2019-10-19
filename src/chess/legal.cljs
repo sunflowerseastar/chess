@@ -121,15 +121,19 @@
         (first captures)
         (rand-nth (filter #(not (nil? %)) all-legal-moves-not-in-check))))))
 
-(def t1 {:board-state "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1" :name "sicilian" :next-move "c7-c5"})
+(def t1 #{{:board-state "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3" :name "sicilian" :next-move "c7-c5"}})
 
-(defn get-openers-table-move [turn board en-passant-target]
-  ;; (let [fbs (game->fen-board-state board)])
-  nil)
+(defn algebraic-move->board-move [algebraic-move]
+  (if algebraic-move {:piece {:color 'b, :piece-type 'p, :x 1, :y 1}, :end-x 1, :end-y 3, :capture nil} nil))
 
-(defn get-move [turn board en-passant-target]
-  (let [openers-table-move (get-openers-table-move turn board en-passant-target)]
-    (if openers-table-move openers-table-move (get-regular-move turn board en-passant-target))))
+(defn get-openers-table-move [fen-board-state]
+  (let [opener-matches (filter #(= (:board-state %) fen-board-state) t1)
+        first-match (first opener-matches)
+        next-move (:next-move first-match)]
+    (println "gotm:" fen-board-state)
+    (println "gotm match: " next-move)
+    (println "gotm match2: " (algebraic-move->board-move next-move))
+    (algebraic-move->board-move next-move)))
 
 (defn any-possible-moves?
   "Take a color, board, and en-passant-target, and return true if a move can end not in check."

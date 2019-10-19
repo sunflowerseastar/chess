@@ -112,7 +112,7 @@
         fen-rank (board->fen-rank board)
         fen-castling (castling->fen-castling castling)
         en-passant-algebraic (en-passant-target->fen-en-passant en-passant-target)]
-    (println fen-rank turn fen-castling)
+    ;; (println fen-rank turn fen-castling)
     (str fen-rank " " turn " " fen-castling " " en-passant-algebraic)))
 
 (defn create-fen [{:keys [halfmove fullmove] :as game}]
