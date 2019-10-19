@@ -1,6 +1,8 @@
 (ns chess.legal
   (:require
-   [chess.helpers :refer [board-after-move my-inclusive-range other-color]]))
+   [chess.fen :refer [algebraic-notation->x-y]]
+   [chess.helpers :refer [board-after-move my-inclusive-range other-color]]
+   [clojure.string :refer [split]]))
 
 (defn get-piece [x y board]
   (-> board (nth y) (nth x)))
@@ -126,9 +128,9 @@
           })
 
 (defn algebraic-move->board-move [algebraic-move]
-  (let []
-    )
-  (if algebraic-move {:piece {:color 'b, :piece-type 'p, :x 1, :y 1}, :end-x 1, :end-y 3, :capture nil} nil))
+  (let [s (split algebraic-move #"x|-")
+        [start-xy end-xy] (map algebraic-notation->x-y s) ]
+    (if algebraic-move {:piece {:color 'b, :piece-type 'p, :x (:x start-xy), :y (:y start-xy)}, :end-x (:x end-xy), :end-y (:y end-xy), :capture nil} nil)))
 
 (defn get-openings-table-move [fen-board-state]
   (let [opening-matches (filter #(= (:board-state %) fen-board-state) t1)
