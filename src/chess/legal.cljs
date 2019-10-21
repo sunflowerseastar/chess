@@ -138,7 +138,8 @@
 
 (defn get-openings-table-move-or-castle [fen-board-state turn board]
   (let [matches-in-openings-table (filter #(= (:board-state %) fen-board-state) openings-table)
-        openings-match (last matches-in-openings-table)
+        specific-match (filter #(= (:number %) "1.32") matches-in-openings-table)
+        openings-match (or (first specific-match) (last matches-in-openings-table))
         next-algebraic-move (:next-algebraic-move openings-match)
         board-move (if next-algebraic-move (algebraic-move->board-move next-algebraic-move turn board) nil)]
     board-move))
