@@ -101,6 +101,11 @@
         opponents-checking-ps (map #(is-legal? % (king :x) (king :y) board en-passant-target) opponents)]
     (some true? opponents-checking-ps)))
 
+(defn first-capture-or-rand [captures all-legal-moves-not-in-check]
+  (if (not-empty captures)
+    (first captures)
+    (rand-nth (filter #(not (nil? %)) all-legal-moves-not-in-check))))
+
 (defn get-regular-move
   "Take a color, board, and en-passant-target, and return a move."
   [color board en-passant-target]
@@ -119,9 +124,7 @@
                                            pieces))]
     (let [moves (filter #(not (nil? %)) all-legal-moves-not-in-check)
           captures (filter #(not (nil? (% :capture))) moves)]
-      (if (not-empty captures)
-        (first captures)
-        (rand-nth (filter #(not (nil? %)) all-legal-moves-not-in-check))))))
+      (first-capture-or-rand captures all-legal-moves-not-in-check))))
 
 
 (defn algebraic-move->board-move [algebraic-move turn board]
