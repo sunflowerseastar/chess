@@ -243,7 +243,6 @@
 
 (defn fen-form [initial-fen]
   (let [ifen (@game :fen)
-        xform-state (reagent/atom {:fen ifen})
         form-state (reagent/atom {:fen ifen})]
     (letfn [(on-submit [e]
               (.preventDefault e)
