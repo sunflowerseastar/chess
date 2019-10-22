@@ -1,17 +1,12 @@
 (ns chess.legal
   (:require
-   [chess.helpers :refer [algebraic-notation->x-y board-after-move my-inclusive-range other-color]]
-   [chess.openings-table :refer [openings-table]]
-   [clojure.string :refer [split]]))
-
-(defn get-piece [x y board]
-  (-> board (nth y) (nth x)))
-
-(defn get-color [x y board]
-  ((get-piece x y board) :color))
-
-(defn get-distance [a b]
-  (Math/abs (- a b)))
+   [chess.helpers :refer [algebraic-move->board-move
+                          board-after-move my-inclusive-range
+                          get-color
+                          get-distance
+                          get-piece
+                          other-color]]
+   [chess.openings-table :refer [openings-table]]))
 
 (defn pawn-two-square-move-from-initial-rank? [color start-x start-y end-x end-y board]
   (let [initial-move-p (or (and (= color 'w) (= start-y 6)) (= start-y 1))
@@ -93,13 +88,11 @@
           :else false)))
 
 (defn can-be-captured?
-  "Take a color, board, and en-passant-target, and return true if it's in check."
+  "Take a color, board, en-passant-target, and x & y, and return true if it could be captured."
   [color board en-passant-target question-x question-y]
-  (println question-x question-y)
   (let [flat-board (flatten board)
         opponents (vec (filter #(= (% :color) (other-color color)) flat-board))
         opponents-checking-ps (map #(is-legal? % question-x question-y board en-passant-target) opponents)]
-    (println opponents opponents-checking-ps)
     (some true? opponents-checking-ps)))
 
 (defn in-check?
@@ -112,13 +105,12 @@
     (some true? opponents-checking-ps)))
 
 (defn first-capture-or-rand [captures moves]
-  (let [will-not-be-captured-captures (filter #(false? (:can-be-captured %)) captures)
-        will-not-be-captured-moves (filter #(false? (:can-be-captured %)) moves)]
-    (println "fcor" will-not-be-captured-moves)
+  (let [will-not-be-captured-captures (filter #(nil? (:can-be-captured %)) captures)
+        will-not-be-captured-moves (filter #(nil? (:can-be-captured %)) moves)]
     (cond
-      (not-empty will-not-be-captured-captures) (first will-not-be-captured-captures)
-      (not-empty will-not-be-captured-moves) (first will-not-be-captured-moves)
-      (not-empty captures) (first captures)
+      (not-empty will-not-be-captured-captures) (rand-nth will-not-be-captured-captures)
+      (not-empty will-not-be-captured-moves) (rand-nth will-not-be-captured-moves)
+      (not-empty captures) (rand-nth captures)
       :else (rand-nth (filter #(not (nil? %)) moves)))))
 
 (defn get-all-legal-moves-not-in-check [color board en-passant-target]
@@ -132,7 +124,7 @@
                                                      capture (destination-piece :piece-type)]
                                                  (if (is-legal? % x y board en-passant-target)
                                                    (if (not (in-check? color (board-after-move % x y board) en-passant-target))
-                                                     (let [cbc (not (can-be-captured? color (board-after-move % x y board) en-passant-target x y))]
+                                                     (let [cbc (can-be-captured? color (board-after-move % x y board) en-passant-target x y)]
                                                        {:piece % :end-x x :end-y y :capture capture :can-be-captured cbc})))))
                                              all-squares)
                                            pieces))]
@@ -144,21 +136,7 @@
   (let [all-legal-moves-not-in-check (get-all-legal-moves-not-in-check color board en-passant-target) ]
     (let [moves (filter #(not (nil? %)) all-legal-moves-not-in-check)
           captures (filter #(not (nil? (% :capture))) moves)]
-      (println moves captures)
       (first-capture-or-rand captures moves))))
-
-
-(defn algebraic-move->board-move [algebraic-move turn board]
-  (let [is-castle-q (re-find #"0-0-0" algebraic-move)
-        is-castle-k (re-find #"0-0" algebraic-move)]
-    (cond is-castle-q {:is-castle 'q}
-          is-castle-k {:is-castle 'k}
-          :else (let [s (split algebraic-move #"x|-")
-                      [start-xy end-xy] (map algebraic-notation->x-y s)
-                      start-x (:x start-xy)
-                      start-y (:y start-xy)]
-                  {:is-castle nil :piece {:color turn, :piece-type ((get-piece start-x start-y board) :piece-type),:x start-x, :y start-y},
-                   :end-x (:x end-xy), :end-y (:y end-xy), :capture nil}))))
 
 (defn get-openings-table-move-or-castle [fen-board-state turn board]
   (let [matches-in-openings-table (filter #(= (:board-state %) fen-board-state) openings-table)

@@ -28,9 +28,7 @@
   (-> fen fen->fen-positions fen-positions->board))
 
 (defn fen->en-passant-target [fen]
-  (let [fen-en-passant (nth (split fen #" ") 3)
-        x-y (algebraic-notation->x-y fen-en-passant)]
-    (-> fen (split #" ") (nth 3) algebraic-notation->x-y)))
+  (-> fen (split #" ") (nth 3) algebraic-notation->x-y))
 
 (defn fen->halfmove [fen]
   (js/parseInt (nth (split fen #" ") 4)))

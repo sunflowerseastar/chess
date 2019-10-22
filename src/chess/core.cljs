@@ -22,7 +22,7 @@
                       fen->halfmove
                       fen-positions->board
                       is-fen-valid?]]
-   [chess.helpers :refer [board-after-move other-color]]
+   [chess.helpers :refer [board-after-move board-move->algebraic-move other-color]]
    [reagent.core :as reagent :refer [atom create-class]]))
 
 (defn generate-board []
@@ -54,6 +54,7 @@
                          :fen ""
                          :fens []
                          :fen-board-states []
+                         :algebraic-moves []
                          :fens-pointer -1})
 
 (def score-initial-state {:wins {:w 0 :b 0}
@@ -167,7 +168,7 @@
   (if should-inc-halfmove (inc-halfmove!) (reset-halfmove!))
   (swap! game assoc :turn (other-color (@game :turn))))
 
-(defn update-post-castle! []
+(defn update-post-castle! [algebraic-castle]
   (let [{:keys [turn board castling en-passant-target]} @game
         new-color (other-color turn)]
     (do
@@ -177,7 +178,8 @@
             is-checkmate (and (@game :in-check) no-possible-moves)]
         (cond is-checkmate (checkmate! turn)
               no-possible-moves (draw!)))
-      (update-fen!))))
+      (update-fen!)
+      (swap! game update :algebraic-moves conj algebraic-castle))))
 
 (defn castle-queenside! []
   (let [{:keys [turn board castling]} @game
@@ -188,7 +190,7 @@
       (swap! game assoc-in [:board y 3] {:piece-type 'r :color turn :x 3 :y y})
       (swap! game assoc-in [:board y 0] {})
       (swap! game assoc-in [:castling (keyword turn)] (assoc (get castling (keyword turn)) :king-moved true :queenside-rook-moved true :has-castled true))
-      (update-post-castle!))))
+      (update-post-castle! "0-0-0"))))
 
 (defn castle-kingside! []
   (let [{:keys [turn board castling]} @game
@@ -199,7 +201,7 @@
       (swap! game assoc-in [:board y 5] {:piece-type 'r :color turn :x 5 :y y})
       (swap! game assoc-in [:board y 7] {})
       (swap! game assoc-in [:castling (keyword turn)] (assoc (get castling (keyword turn)) :king-moved true :kingside-rook-moved true :has-castled true))
-      (update-post-castle!))))
+      (update-post-castle! "0-0"))))
 
 (defn update-castling! [active-piece end-x end-y]
   (let [turn (@game :turn) {:keys [color piece-type x]} active-piece]
@@ -239,6 +241,7 @@
           (cond is-checkmate (checkmate! landing-color)
                 no-possible-moves (draw!)))
         (update-fen!)
+        (swap! game update :algebraic-moves conj (board-move->algebraic-move active-piece end-x end-y))
         (update-threefold-repitition!))))
 
 (defn fen-form [initial-fen]
