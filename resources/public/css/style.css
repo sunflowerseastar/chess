@@ -25,6 +25,11 @@ input {
 	justify-content: flex-end;
 	padding: 48px 1em 1em;
 	box-sizing: border-box;
+  transition: opacity 2.6s ease-in-out;
+  opacity: 0;
+}
+.chess.has-initially-loaded {
+  opacity: 1;
 }
 .chess.is-info-page-showing {
   position: relative;

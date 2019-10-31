@@ -62,7 +62,7 @@
 
 (def game (atom game-initial-state))
 (def score (atom score-initial-state))
-(def ui (atom {:is-info-page-showing false}))
+(def ui (atom {:is-info-page-showing false :has-initially-loaded false}))
 
 (defn update-fen! []
   (let [fen-board-state (game->fen-board-state @game)
@@ -294,7 +294,9 @@
                                      (set-game-to-fen! (nth fens (+ fens-pointer 1))))))
                     is-space (make-move))))]
     (create-class
-     {:component-did-mount #(.addEventListener js/document "keydown" keyboard-listeners)
+     {:component-did-mount (fn [] (do
+                                    (js/setTimeout #(swap! ui assoc :has-initially-loaded true) 0)
+                                    (.addEventListener js/document "keydown" keyboard-listeners)))
       :component-will-unmount #(.removeEventListener js/document "keydown" keyboard-listeners)
       :reagent-render (fn [this]
                         (let [{:keys [active-piece board castling current-winner draws en-passant-target fen fifty-move-rule fullmove halfmove in-check state result threefold-repitition turn]} @game
@@ -303,7 +305,8 @@
                               off-p (and (= state :stopped) (nil? current-winner))
                               {king-x :x, king-y :y, :or {king-x -1 king-y -1}}
                               (first (filter #(and (= (% :color) in-check) (= (% :piece-type) 'k)) (flatten board)))]
-                          [:div.chess {:class (if (@ui :is-info-page-showing) "is-info-page-showing")}
+                          [:div.chess {:class [(if (@ui :is-info-page-showing) "is-info-page-showing")
+                                               (if (@ui :has-initially-loaded) "has-initially-loaded")]}
                            [:div.rook-three-lines {:on-click #(swap! ui assoc :is-info-page-showing (not (@ui :is-info-page-showing)))}
                             (svg-of 'm "none")]
                            [:div.board-container
