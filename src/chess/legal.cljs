@@ -42,8 +42,8 @@
 (defn is-legal-king-move? [start-x start-y end-x end-y]
   (let [x-distance (get-distance start-x end-x)
         y-distance (get-distance start-y end-y)
-        one-square-move-p (and (<= x-distance 1) (<= y-distance 1))]
-    one-square-move-p))
+        is-one-square-move (and (<= x-distance 1) (<= y-distance 1))]
+    is-one-square-move))
 
 (defn is-legal-cardinal-move? [start-x start-y end-x end-y board]
   (let [x-distance (get-distance start-x end-x)
@@ -81,9 +81,8 @@
           (= piece-type 'r) (is-legal-cardinal-move? x y end-x end-y board)
           (= piece-type 'n) (is-legal-knight-move? x y end-x end-y)
           (= piece-type 'b) (is-legal-diagonal-move? x y end-x end-y board)
-          (= piece-type 'q) (or
-                             (is-legal-cardinal-move? x y end-x end-y board)
-                             (is-legal-diagonal-move? x y end-x end-y board))
+          (= piece-type 'q) (or (is-legal-cardinal-move? x y end-x end-y board)
+                                (is-legal-diagonal-move? x y end-x end-y board))
           (= piece-type 'k) (is-legal-king-move? x y end-x end-y)
           :else false)))
 
