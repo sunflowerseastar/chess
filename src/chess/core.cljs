@@ -281,7 +281,9 @@
                   meta (.-metaKey e)
                   is-left (or (= key "ArrowLeft") (and meta (= key "z") (not shift)) (and ctrl (= key "z") (not shift)))
                   is-right (or (= key "ArrowRight") (and meta shift (= key "z")) (and ctrl shift (= key "z")))
-                  is-space (= (.-keyCode e) 32)]
+                  is-space (= (.-keyCode e) 32)
+                  is-enter (= (.-keyCode e) 13)
+                  is-r (= (.-keyCode e) 82)]
               (cond is-left (let [fens (@game :fens)
                                   fens-pointer (@game :fens-pointer)]
                               (when (> fens-pointer 0)
@@ -292,7 +294,10 @@
                                (when (> (- (count fens) 1) fens-pointer)
                                  (do (swap! game assoc :fens-pointer (inc fens-pointer))
                                      (set-game-to-fen! (nth fens (+ fens-pointer 1))))))
-                    is-space (make-move))))]
+                    (or is-enter is-space) (if (= (:state @game) :stopped)
+                                             (start!)
+                                             (make-move))
+                    is-r (reset-game!))))]
     (create-class
      {:component-did-mount (fn [] (do
                                     (js/setTimeout #(swap! ui assoc :has-initially-loaded true) 0)
