@@ -294,8 +294,7 @@
                                (when (> (- (count fens) 1) fens-pointer)
                                  (do (swap! game assoc :fens-pointer (inc fens-pointer))
                                      (set-game-to-fen! (nth fens (+ fens-pointer 1))))))
-                    (or is-enter is-space) (if (= (:state @game) :stopped)
-                                             (start!)
+                    (or is-enter is-space) (when (not= (:state @game) :stopped)
                                              (make-move))
                     is-r (reset-game!))))]
     (create-class
