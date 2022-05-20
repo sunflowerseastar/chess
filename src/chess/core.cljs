@@ -369,7 +369,7 @@
                                                                      (not (in-check? (@game :turn) (board-after-move active-piece x y board) en-passant-target)))
                                                               (land-piece! active-piece x y)
                                                               (clear-active-piece!)))}
-                                          (if (not-empty square)
+                                          (when (not-empty square)
                                             [:span.piece-container
                                              {:class [color piece-type]} (svg-of piece-type color)])]))
                                      row))

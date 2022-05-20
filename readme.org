@@ -1,0 +1,54 @@
+#+caption: chess
+[[https://raw.githubusercontent.com/sunflowerseastar/chess/master/chess-readme.png]]
+
+* Chess
+
+- clutter-free chess app, 1 or 2 player (desktop)
+- full rule set, with the exception of promoting a pawn to a not-queen
+- traditional piece design
+- computer player (via spacebar/enter), although not a good one
+- openings table (partial)
+- supports FEN import/export
+- responsive
+
+** Todo
+
+- afford computer player on mobile
+- permit a player to promote a cross-board pawn to any piece
+- improve computer player middlegame (minmax, other?)
+- add computer player endgame
+- split out components
+
+* Quick Start
+
+Pre-reqs:
+
+- [[https://clojure.org/guides/getting_started][Clojure/ClojureScript​]]
+- [[https://github.com/technomancy/leiningen/wiki/Packaging][Leiningen]]
+
+Use [[https://figwheel.org/][figwheel-main]], with config in ~project.clj~.
+
+#+begin_src sh
+# open a hot-reload dev server in the browser, plus repl
+lein fig:build
+# or
+lein fig -- -b dev -r
+
+# create a build in resources/public
+lein fig:min
+#+end_src
+
+For emacs dev, [[https://docs.cider.mx/cider/cljs/figwheel.html#using-figwheel-main][cider-jack-in-cljs]] from [[https://docs.cider.mx/cider/cljs/figwheel.html#using-figwheel-main][CIDER]].
+
+* Overview
+
+There's one big component that contains the two core views: the main gameplay view (header, chess board, and buttons), and the "info page" (a modal). The fact that they're crammed together is admittedly ignoble, but perhaps it's notable that the entire UI's markup — even things like ~on-drag-start~ and classname logic for ~in-check~ — tops out around 75 lines.
+
+The codes lives in ~src/~:
+
+- ~core.cljs~ - the app state, the actions or commands that update the state, and the markup
+- ~fen.cljs~ - translations to/from app state & [[https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation][FEN]]
+- ~helpers.cljs~ - small utility functions
+- ~legal.cljs~ - pure functions that answer questions about what is and isn't possible with a certain board & configuration
+- ~openings_table.cljs~ - some common openings, pulled from Eduard Gufeld and Nikolai Kalinichenko's [[https://everymanchess.com/products/opening-repertoire-for-the-attacking-player][Opening Repertoire for the Attacking Player]]
+- ~svgs.cljs~ - SVGs created to look like the pieces from said book
