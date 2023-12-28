@@ -1,5 +1,5 @@
 (defproject chess "0.8.0"
-  :description "Chess"
+  :description "Chess engine and UI in Reagent"
   :url "https://github.com/sunflowerseastar/chess"
   :license {:name "GNU Affero General Public License v3"
             :url "http://www.gnu.org/licenses/agpl-3.0.html"}
