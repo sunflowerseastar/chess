@@ -36,6 +36,11 @@ lein fig -- -b dev -r
 
 # create a build in resources/public
 lein fig:min
+
+# cypress tests
+yarn
+yarn cy:open
+yarn cy:run
 #+end_src
 
 For emacs dev, [[https://docs.cider.mx/cider/cljs/figwheel.html#using-figwheel-main][cider-jack-in-cljs]] from [[https://docs.cider.mx/cider/cljs/figwheel.html#using-figwheel-main][CIDER]].

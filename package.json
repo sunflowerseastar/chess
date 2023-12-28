@@ -1,0 +1,14 @@
+{
+  "name": "chess",
+  "version": "0.8.0",
+  "license": "GPL-3.0",
+  "description": "Chess engine and UI in Reagent",
+  "scripts": {
+    "cy:open": "cypress open",
+    "cy:run": "cypress run"
+  },
+  "devDependencies": {
+    "cypress": "^13.6.2",
+    "typescript": "^5.3.3"
+  }
+}
