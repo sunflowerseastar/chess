@@ -29,13 +29,13 @@ Pre-reqs:
 Use [[https://figwheel.org/][figwheel-main]], with config in ~project.clj~.
 
 #+begin_src sh
-# open a hot-reload dev server in the browser, plus repl
-lein fig:build
+lein fig:build # dev - localhost:9500
+# http://localhost:9500/figwheel-extra-main/auto-testing
 # or
 lein fig -- -b dev -r
 
-# create a build in resources/public
-lein fig:min
+lein fig:min   # build
+lein fig:test  # test
 
 # cypress tests
 yarn
