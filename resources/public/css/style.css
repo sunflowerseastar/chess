@@ -18,7 +18,7 @@ input {
   justify-content: flex-end;
   padding: 48px 1em 1em;
   box-sizing: border-box;
-  transition: opacity 2.6s ease-in-out;
+  transition: opacity 1s ease-in-out;
   opacity: 0;
 }
 .chess.has-initially-loaded {
