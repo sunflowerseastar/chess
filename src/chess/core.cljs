@@ -282,12 +282,12 @@
                                   fens-pointer (@game :fens-pointer)]
                               (when (> fens-pointer 0)
                                 (swap! game assoc :fens-pointer (dec fens-pointer))
-                                (set-game-to-fen! (nth fens (- fens-pointer 1)))))
+                                (set-game-to-fen! (nth fens (dec fens-pointer)))))
                     is-right (let [fens (@game :fens)
                                    fens-pointer (@game :fens-pointer)]
                                (when (> (- (count fens) 1) fens-pointer)
                                  (swap! game assoc :fens-pointer (inc fens-pointer))
-                                 (set-game-to-fen! (nth fens (+ fens-pointer 1)))))
+                                 (set-game-to-fen! (nth fens (inc fens-pointer)))))
                     (or is-enter is-space) (when (not= (:state @game) :stopped)
                                              (make-move))
                     is-r (reset-game!))))]
@@ -302,8 +302,8 @@
                               off-p (and (= state :stopped) (nil? current-winner))
                               {king-x :x, king-y :y, :or {king-x -1 king-y -1}}
                               (first (filter #(and (= (% :color) in-check) (= (% :piece-type) 'k)) (flatten board)))]
-                          [:div.chess {:class [(if (@ui :is-info-page-showing) "is-info-page-showing")
-                                               (if (@ui :has-initially-loaded) "has-initially-loaded")]}
+                          [:div.chess {:class [(when (@ui :is-info-page-showing) "is-info-page-showing")
+                                               (when (@ui :has-initially-loaded) "has-initially-loaded")]}
                            [:div.rook-three-lines {:on-click #(swap! ui assoc :is-info-page-showing (not (@ui :is-info-page-showing)))}
                             (svg-of 'm "none")]
                            [:div.board-container
@@ -320,7 +320,8 @@
                                                               [:li "in-check: " in-check]
                                                               [:li "halfmove: " halfmove]
                                                               [:li "fullmove: " fullmove]]]
-                                [:div.board {:data-cy (when (= (@game :result) :checkmate) "checkmate")
+                                [:div.board {:data-cy (cond (= (@game :result) :checkmate) "checkmate"
+                                                            in-check "check")
                                              :class [(if (= (@game :result) :checkmate) (str current-winner " checkmate") turn)
                                                      (when (= (@game :result) :draw) "draw")
                                                      (when (not-empty active-piece) "is-active")
@@ -378,8 +379,10 @@
                                 [:div.button-container [:button {:class "white-bg reset" :on-click #(reset-game!)} "reset"]]]
                                [:div.button-container
                                 [:button {:class (when (not stopped-p) "inactive") :on-click #(start!) :data-cy "start"} "start"]
-                                [:button {:class (when (not can-castle-queenside) "inactive") :on-click #(castle-queenside!)} "castle Q"]
-                                [:button {:class (when (not can-castle-kingside) "inactive") :on-click #(castle-kingside!)} "castle K"]
+                                [:button {:class (when (not can-castle-queenside) "inactive")
+                                          :data-cy "castle-q" :on-click #(castle-queenside!)} "castle Q"]
+                                [:button {:class (when (not can-castle-kingside) "inactive")
+                                          :data-cy "castle-k" :on-click #(castle-kingside!)} "castle K"]
                                 [:button {:class (when (and (not threefold-repitition) (not fifty-move-rule)) "inactive") :on-click #(draw!)} "draw"]]))]))})))
 
 (defn get-app-element []
