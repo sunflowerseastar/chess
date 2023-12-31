@@ -275,32 +275,29 @@
 (defn main []
   (letfn [(keyboard-listeners [e]
             (let [key (.-key e)
-                  shift (.-shiftKey e)
                   ctrl (.-ctrlKey e)
-                  cmd (.-cmdKey e)
                   meta (.-metaKey e)
-                  is-left (or (= key "ArrowLeft") (and meta (= key "z") (not shift)) (and ctrl (= key "z") (not shift)))
-                  is-right (or (= key "ArrowRight") (and meta shift (= key "z")) (and ctrl shift (= key "z")))
+                  is-left (or (= key "ArrowLeft") (and meta (= key "z")) (and ctrl (= key "z")))
+                  is-right (or (= key "ArrowRight") (= key "Z"))
                   is-space (= (.-keyCode e) 32)
                   is-enter (= (.-keyCode e) 13)
-                  is-r (= (.-keyCode e) 82)]
+                  is-r (= key "R")]
               (cond is-left (let [fens (@game :fens)
                                   fens-pointer (@game :fens-pointer)]
                               (when (> fens-pointer 0)
-                                (do (swap! game assoc :fens-pointer (dec fens-pointer))
-                                    (set-game-to-fen! (nth fens (- fens-pointer 1))))))
+                                (swap! game assoc :fens-pointer (dec fens-pointer))
+                                (set-game-to-fen! (nth fens (- fens-pointer 1)))))
                     is-right (let [fens (@game :fens)
                                    fens-pointer (@game :fens-pointer)]
                                (when (> (- (count fens) 1) fens-pointer)
-                                 (do (swap! game assoc :fens-pointer (inc fens-pointer))
-                                     (set-game-to-fen! (nth fens (+ fens-pointer 1))))))
+                                 (swap! game assoc :fens-pointer (inc fens-pointer))
+                                 (set-game-to-fen! (nth fens (+ fens-pointer 1)))))
                     (or is-enter is-space) (when (not= (:state @game) :stopped)
                                              (make-move))
                     is-r (reset-game!))))]
     (create-class
-     {:component-did-mount (fn [] (do
-                                    (js/setTimeout #(swap! ui assoc :has-initially-loaded true) 0)
-                                    (.addEventListener js/document "keydown" keyboard-listeners)))
+     {:component-did-mount (fn [] (js/setTimeout #(swap! ui assoc :has-initially-loaded true) 0)
+                             (.addEventListener js/document "keydown" keyboard-listeners))
       :component-will-unmount #(.removeEventListener js/document "keydown" keyboard-listeners)
       :reagent-render (fn [this]
                         (let [{:keys [active-piece board castling current-winner draws en-passant-target fen fifty-move-rule fullmove halfmove in-check state result threefold-repitition turn]} @game
@@ -373,7 +370,8 @@
                                                               (clear-active-piece!)))}
                                           (when (not-empty square)
                                             [:span.piece-container
-                                             {:class [color piece-type]} (svg-of piece-type color)])]))
+                                             {:data-cy "piece"
+                                              :class [color piece-type]} (svg-of piece-type color)])]))
                                      row))
                                   board)])]
                            (let [can-castle-kingside (can-castle-kingside? turn board castling in-check)
