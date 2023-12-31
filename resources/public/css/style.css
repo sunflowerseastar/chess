@@ -1,23 +1,23 @@
 body {
   position: fixed;
   width: 100%;
-	margin: 0;
-	font-family: 'iosevka ss05', Menlo, 'Andale Mono', monospace;
+  margin: 0;
+  font-family: "iosevka ss05", Menlo, "Andale Mono", monospace;
   touch-action: manipulation;
 }
 input {
-	font-family: 'iosevka ss05', Menlo, 'Andale Mono', monospace;
+  font-family: "iosevka ss05", Menlo, "Andale Mono", monospace;
 }
 #app {
-	height: 100vh;
+  height: 100vh;
 }
 .chess {
-	height: 100vh;
-	display: flex;
-	flex-direction: column;
-	justify-content: flex-end;
-	padding: 48px 1em 1em;
-	box-sizing: border-box;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 48px 1em 1em;
+  box-sizing: border-box;
   transition: opacity 2.6s ease-in-out;
   opacity: 0;
 }
@@ -26,7 +26,7 @@ input {
 }
 .chess.is-info-page-showing {
   position: relative;
-	background: black;
+  background: black;
 }
 .chess.is-info-page-showing:after {
   content: "";
@@ -38,427 +38,426 @@ input {
   background: black;
 }
 
-
 .board-container {
-	flex: 1;
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 @media (min-width: 768px) {
-	.board-container {
-		padding: 1em 0;
-	}
+  .board-container {
+    padding: 1em 0;
+  }
 }
 .board {
-	position: relative;
-	align-self: center;
-	display: grid;
-	width: 100%;
-	max-width: 54vh;
-	margin: 0 auto;
-	grid-template-columns: repeat(8, 12.5%);
-	transition: opacity 1s cubic-bezier(0.3, 0.8, 0.1, 0.95);
+  position: relative;
+  align-self: center;
+  display: grid;
+  width: 100%;
+  max-width: 54vh;
+  margin: 0 auto;
+  grid-template-columns: repeat(8, 12.5%);
+  transition: opacity 1s cubic-bezier(0.3, 0.8, 0.1, 0.95);
 }
 @media (min-width: 480px) {
-	.board {
-		width: 80%;
-	}
+  .board {
+    width: 80%;
+  }
 }
 @media (min-width: 768px) {
-	.board {
-		width: 90%;
-		max-width: 72vh;
-	}
+  .board {
+    width: 90%;
+    max-width: 72vh;
+  }
 }
 .board:before,
 .board:before {
-	content: '';
-	position: absolute;
-	left: -6px;
-	right: -6px;
-	transition: opacity 1s linear;
-	border-top: 1px transparent;
-	border-bottom: 1px transparent;
-	opacity: 0;
+  content: "";
+  position: absolute;
+  left: -6px;
+  right: -6px;
+  transition: opacity 1s linear;
+  border-top: 1px transparent;
+  border-bottom: 1px transparent;
+  opacity: 0;
 }
 .board.b:before,
 .board.w:before {
-	opacity: 1;
+  opacity: 1;
 }
 .board.w:before {
-	bottom: -10px;
-	border-bottom: 1px solid black;
+  bottom: -10px;
+  border-bottom: 1px solid black;
 }
 .board.b:before {
-	top: -10px;
-	border-top: 1px solid black;
+  top: -10px;
+  border-top: 1px solid black;
 }
 .board.checkmate.b:before {
-	top: -15px;
-	border-top: 5px solid #00ff7c;
+  top: -15px;
+  border-top: 5px solid #00ff7c;
 }
 .board.checkmate.w:before {
-	bottom: -15px;
-	border-bottom: 5px solid #00ff7c;
+  bottom: -15px;
+  border-bottom: 5px solid #00ff7c;
 }
 .board.checkmate:after {
-	border-color: white;
-	transition: all 1s cubic-bezier(0.3, 0.8, 0.1, 0.95);
+  border-color: white;
+  transition: all 1s cubic-bezier(0.3, 0.8, 0.1, 0.95);
 }
 .board:after {
-	content: '';
-	position: absolute;
-	top: -6px;
-	left: -6px;
-	right: -6px;
-	bottom: -6px;
-	border: 3px solid;
-	transition: all 6s cubic-bezier(0.3, 0.8, 0.1, 0.95);
-	pointer-events: none;
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  right: -6px;
+  bottom: -6px;
+  border: 3px solid;
+  transition: all 6s cubic-bezier(0.3, 0.8, 0.1, 0.95);
+  pointer-events: none;
 }
 .board.off-p:after {
-	border-color: white;
-	transition: all 1s cubic-bezier(0.3, 0.8, 0.1, 0.95);
+  border-color: white;
+  transition: all 1s cubic-bezier(0.3, 0.8, 0.1, 0.95);
 }
 .board.draw:before,
 .board.draw:after {
-	background: repeating-linear-gradient(
-		-45deg,
-		#aaa,
-		#aaa 12px,
-		#fff 12px,
-		#fff 15px
-	);
-	height: 6px;
-	opacity: 1;
-	transition: all 1s cubic-bezier(0.3, 0.8, 0.1, 0.95);
-	border: none;
+  background: repeating-linear-gradient(
+    -45deg,
+    #aaa,
+    #aaa 12px,
+    #fff 12px,
+    #fff 15px
+  );
+  height: 6px;
+  opacity: 1;
+  transition: all 1s cubic-bezier(0.3, 0.8, 0.1, 0.95);
+  border: none;
 }
 .board.draw:before {
-	top: -15px;
+  top: -15px;
 }
 .board.draw:after {
-	top: auto;
-	bottom: -15px;
+  top: auto;
+  bottom: -15px;
 }
 .square {
-	position: relative;
-	height: 0;
-	padding-bottom: 100%;
+  position: relative;
+  height: 0;
+  padding-bottom: 100%;
 }
 .square.dark {
-	position: relative;
+  position: relative;
 }
 .square:before,
 .square:after {
-	content: '';
-	position: absolute;
-	top: 0;
-	right: 0;
-	bottom: 0;
-	left: 0;
-	transition: all 0.1s cubic-bezier(0.3, 0.8, 0.1, 0.95);
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transition: all 0.1s cubic-bezier(0.3, 0.8, 0.1, 0.95);
 }
 .square:before {
-	margin: 1px;
+  margin: 1px;
 }
 .square:after {
-	opacity: 0;
-	margin: 3px;
-	border: 3px solid #eee;
+  opacity: 0;
+  margin: 3px;
+  border: 3px solid #eee;
 }
 .square.dark:after {
-	border-color: #fff;
+  border-color: #fff;
 }
 .square.dark:before {
-	background: repeating-linear-gradient(
-		-45deg,
-		#e2e2e2,
-		#e2e2e2 2px,
-		#fff 2px,
-		#fff 5px
-	);
+  background: repeating-linear-gradient(
+    -45deg,
+    #e2e2e2,
+    #e2e2e2 2px,
+    #fff 2px,
+    #fff 5px
+  );
 }
 .square.active-p,
 .square.can-activate-p {
-	cursor: pointer;
+  cursor: pointer;
 }
 .square.active-p:after {
-	opacity: 1;
+  opacity: 1;
 }
 .square.can-activate-p:hover:after,
 .is-active .square:hover:after {
-	opacity: 1;
+  opacity: 1;
 }
 .piece-container {
-	position: absolute;
-	top: 0;
-	right: 0;
-	bottom: 0;
-	left: 0;
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 svg {
-	align-self: center;
-	width: 63%;
-	transition: opacity 1s cubic-bezier(0.3, 0.8, 0.1, 0.95);
-	opacity: 1;
+  align-self: center;
+  width: 63%;
+  transition: opacity 1s cubic-bezier(0.3, 0.8, 0.1, 0.95);
+  opacity: 1;
 }
 .off-p svg {
-	opacity: 0;
+  opacity: 0;
 }
 svg.w {
-	fill: white;
-	stroke: black;
-	stroke-width: 10px;
-	stroke-linejoin: round;
+  fill: white;
+  stroke: black;
+  stroke-width: 10px;
+  stroke-linejoin: round;
 }
 @media (min-width: 480px) {
-	svg.w {
-		stroke-width: 8px;
-	}
+  svg.w {
+    stroke-width: 8px;
+  }
 }
 @media (min-width: 768px) {
-	svg.w {
-		stroke-width: 7px;
-	}
+  svg.w {
+    stroke-width: 7px;
+  }
 }
 .checkmate .square.in-check:before {
-	background: repeating-linear-gradient(
-		-45deg,
-		#f00,
-		#f00 1px,
-		#fff 1px,
-		#fff 5px
-	);
+  background: repeating-linear-gradient(
+    -45deg,
+    #f00,
+    #f00 1px,
+    #fff 1px,
+    #fff 5px
+  );
 }
 .checkmate .square:after {
-	border-color: transparent;
+  border-color: transparent;
 }
 .square.in-check:after {
-	border: 3px solid yellow;
-	opacity: 1;
+  border: 3px solid yellow;
+  opacity: 1;
 }
 .checkmate .square.in-check:after {
-	border-color: transparent;
+  border-color: transparent;
 }
 
 .rook-three-lines {
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 18px;
-	padding: 3vw 3.6vw;
-	cursor: pointer;
-	z-index: 2;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 18px;
+  padding: 3vw 3.6vw;
+  cursor: pointer;
+  z-index: 2;
 }
 .rook-three-lines:hover {
-	background: black;
+  background: black;
 }
 .rook-three-lines svg {
-	width: 100%;
+  width: 100%;
 }
 .rook-three-lines:hover svg {
-	fill: white;
+  fill: white;
 }
 .chess.is-info-page-showing .rook-three-lines svg {
-	fill: white;
+  fill: white;
 }
 .chess.is-info-page-showing .rook-three-lines:hover {
-	background: white;
+  background: white;
 }
 .chess.is-info-page-showing .rook-three-lines:hover svg {
-	fill: black;
+  fill: black;
 }
 
 .info-page {
-	position: relative;
-	align-self: center;
-	width: 100%;
-	max-width: 800px;
-	margin: 0 auto;
-	color: white;
-	/* border: 1px solid magenta; */
+  position: relative;
+  align-self: center;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  color: white;
+  /* border: 1px solid magenta; */
 }
 
 @media (min-width: 768px) {
-	.info-page {
-		flex: 1;
-	}
+  .info-page {
+    flex: 1;
+  }
 }
 .info-page ul {
-	padding-left: 15px;
+  padding-left: 15px;
 }
 
 .info-page li {
-	font-size: 9px;
-	list-style: square;
-	text-align: left;
-	line-height: 1.8;
+  font-size: 9px;
+  list-style: square;
+  text-align: left;
+  line-height: 1.8;
 }
 @media (min-width: 480px) {
-	.info-page li {
-		font-size: 11px;
-	}
+  .info-page li {
+    font-size: 11px;
+  }
 }
 @media (min-width: 768px) {
-	.info-page li {
-		font-size: 13px;
-	}
+  .info-page li {
+    font-size: 13px;
+  }
 }
 @media (min-width: 992px) {
-	.info-page li {
-		font-size: 14px;
-	}
+  .info-page li {
+    font-size: 14px;
+  }
 }
 .fen-form {
-	display: flex;
-	flex-direction: row;
+  display: flex;
+  flex-direction: row;
 }
 .fen-form input {
-	flex: 1;
-	display: block;
-	padding: 0 0.5em;
-	color: white;
-	font-size: 10px;
-	background: #333;
-	border: none;
+  flex: 1;
+  display: block;
+  padding: 0 0.5em;
+  color: white;
+  font-size: 10px;
+  background: #333;
+  border: none;
 }
 @media (min-width: 480px) {
-	.fen-form input {
-		padding: 0 1em;
-		font-size: 11px;
-	}
+  .fen-form input {
+    padding: 0 1em;
+    font-size: 11px;
+  }
 }
 @media (min-width: 768px) {
-	.fen-form input {
-		font-size: 14px;
-	}
+  .fen-form input {
+    font-size: 14px;
+  }
 }
 @media (min-width: 992px) {
-	.fen-form input {
-		padding: 0 1.6em;
-		font-size: 15px;
-	}
+  .fen-form input {
+    padding: 0 1.6em;
+    font-size: 15px;
+  }
 }
 
 .fen-form button {
-	max-width: 70px;
-	margin: 0;
-	color: white;
-	background: #222;
+  max-width: 70px;
+  margin: 0;
+  color: white;
+  background: #222;
 }
 .fen-form button:hover {
-	color: black;
-	background: white;
+  color: black;
+  background: white;
 }
 
 .button-container {
-	box-sizing: border-box;
-	align-self: center;
-	display: flex;
-	flex-direction: column;
-	width: 100%;
-	padding-top: 1em;
+  box-sizing: border-box;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding-top: 1em;
 }
 @media (min-width: 480px) {
 }
 @media (min-width: 768px) {
-	.button-container {
-		flex-direction: row;
-		padding-top: 0;
-	}
+  .button-container {
+    flex-direction: row;
+    padding-top: 0;
+  }
 }
 @media (min-width: 992px) {
-	.button-container {
-		max-width: 900px;
-	}
+  .button-container {
+    max-width: 900px;
+  }
 }
 button {
-	display: inline-block;
-	padding: 10px 20px;
-	color: black;
-	letter-spacing: 0.16em;
-	text-transform: uppercase;
-	font-size: 12px;
-	font-weight: bold;
-	background: white;
-	border: 1px solid transparent;
+  display: inline-block;
+  padding: 10px 20px;
+  color: black;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: bold;
+  background: white;
+  border: 1px solid transparent;
 }
 @media (min-width: 480px) {
-	button {
-		stroke-width: 8px;
-	}
+  button {
+    stroke-width: 8px;
+  }
 }
 @media (min-width: 768px) {
-	button {
-		flex: 1;
-		height: 100%;
-		padding: 15px 20px;
-		margin: 0 2vh;
-	}
+  button {
+    flex: 1;
+    height: 100%;
+    padding: 15px 20px;
+    margin: 0 2vh;
+  }
 }
 @media (min-width: 992px) {
-	button {
-		padding: 0 20px;
-		height: 8vh;
-	}
+  button {
+    padding: 0 20px;
+    height: 8vh;
+  }
 }
 button:focus {
-	outline: none;
-	position: relative;
+  outline: none;
+  position: relative;
 }
 button:focus:after {
-	content: '';
-	display: block;
-	position: absolute;
-	top: -5px;
-	left: -6px;
-	width: calc(100% + 10px);
-	height: calc(100% + 8px);
-	border: 1px solid #e2e2e2;
+  content: "";
+  display: block;
+  position: absolute;
+  top: -5px;
+  left: -6px;
+  width: calc(100% + 10px);
+  height: calc(100% + 8px);
+  border: 1px solid #e2e2e2;
 }
 @media (min-width: 1080px) {
-	button {
-		font-size: 12px;
-	}
+  button {
+    font-size: 12px;
+  }
 }
 button:hover {
-	color: white;
-	background: black;
-	cursor: pointer;
+  color: white;
+  background: black;
+  cursor: pointer;
 }
 @media (min-width: 480px) {
-	button + button {
-	}
+  button + button {
+  }
 }
 @media (min-width: 768px) {
-	button + button {
-		margin-left: calc(3vw * 1.5);
-	}
+  button + button {
+    margin-left: calc(3vw * 1.5);
+  }
 }
 
 button.inactive,
 .inactive button {
-	opacity: 0.2;
-	cursor: default;
-	pointer-events: none;
+  opacity: 0.2;
+  cursor: default;
+  pointer-events: none;
 }
 .inactive button:hover {
-	color: white;
-	background: black;
+  color: white;
+  background: black;
 }
 .white-bg {
-	color: black;
-	background: white;
+  color: black;
+  background: white;
 }
 .white-bg:hover {
-	color: white;
-	background: #222;
+  color: white;
+  background: #222;
 }
 .reset:hover {
-	background: red;
+  background: red;
 }
