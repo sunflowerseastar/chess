@@ -70,18 +70,17 @@
         fens (@game :fens)
         fen-board-states (@game :fen-board-states)
         fens-pointer (@game :fens-pointer)]
-    (do (swap! game assoc :fen fen :fen-form fen)
-        (if (= fens-pointer (- (count fens) 1))
-          (do ;; add state and bump pointer
-            (swap! game update :fens conj fen)
-            (swap! game update :fen-board-states conj fen-board-state)
-            (swap! game assoc :fens-pointer (inc fens-pointer)))
-          ;; pointer doesn't match, clobber fens and fen-board-states after pointer
-          (let [fens-to-keep (vec (take (inc fens-pointer) fens))
-                fen-board-states-to-keep (vec (take (inc fens-pointer) fens))]
-            (do (swap! game assoc :fens (conj fens-to-keep fen))
-                (swap! game assoc :fen-board-states (conj fen-board-states fen-board-state))
-                (swap! game assoc :fens-pointer (count fens-to-keep))))))))
+    (swap! game assoc :fen fen :fen-form fen)
+    (if (= fens-pointer (dec (count fens)))
+      ;; add state and bump pointer
+      (do (swap! game update :fens conj fen)
+          (swap! game update :fen-board-states conj fen-board-state)
+          (swap! game assoc :fens-pointer (inc fens-pointer)))
+      ;; pointer doesn't match, clobber fens and fen-board-states after pointer
+      (let [fens-to-keep (vec (take (inc fens-pointer) fens))]
+        (swap! game assoc :fens (conj fens-to-keep fen))
+        (swap! game assoc :fen-board-states (conj fen-board-states fen-board-state))
+        (swap! game assoc :fens-pointer (count fens-to-keep))))))
 
 (defn update-threefold-repitition! []
   (let [fbs (@game :fen-board-states)
@@ -89,14 +88,13 @@
     (when threefold-repitition (swap! game assoc :threefold-repitition true))))
 
 (defn reset-game! []
-  (do (reset! score score-initial-state)
-      (reset! game game-initial-state)))
+  (reset! score score-initial-state)
+  (reset! game game-initial-state))
 
 (defn start! []
-  (do
-    (reset! game game-initial-state)
-    (swap! game assoc :state :rest :turn 'w :board (generate-board))
-    (update-fen!)))
+  (reset! game game-initial-state)
+  (swap! game assoc :state :rest :turn 'w :board (generate-board))
+  (update-fen!))
 
 (defn in-check! [color]
   (swap! game assoc :in-check color))
@@ -122,22 +120,22 @@
         board (fen->board fen)
         halfmove (fen->halfmove fen)
         fullmove (fen->fullmove fen)]
-    (do (swap! game assoc :state :rest :turn turn :castling castling
-               :current-winner nil :active-piece {} :threefold-repitition false :result nil
-               :en-passant-target en-passant-target :board board :halfmove halfmove :fullmove fullmove)
-        (let [other-turn (other-color turn)
-              is-in-check-turn (in-check? turn (@game :board) (@game :en-passant-target))
-              is-in-check-other-turn (in-check? other-turn (@game :board) (@game :en-passant-target))
-              no-possible-moves-turn (not (any-possible-moves? turn (@game :board) (@game :en-passant-target)))
-              no-possible-moves-other-turn (not (any-possible-moves? other-turn (@game :board) (@game :en-passant-target)))]
-          (cond (and is-in-check-other-turn no-possible-moves-other-turn) (checkmate! turn)
-                is-in-check-other-turn (in-check! other-turn)
-                no-possible-moves-other-turn (draw!)
-                (and is-in-check-turn no-possible-moves-turn) (checkmate! other-turn)
-                is-in-check-turn (in-check! turn)
-                :else (in-check! nil)))
-        (if (>= halfmove 50)
-          (swap! game assoc :fifty-move-rule true) (swap! game assoc :fifty-move-rule false)))))
+    (swap! game assoc :state :rest :turn turn :castling castling
+           :current-winner nil :active-piece {} :threefold-repitition false :result nil
+           :en-passant-target en-passant-target :board board :halfmove halfmove :fullmove fullmove)
+    (let [other-turn (other-color turn)
+          is-in-check-turn (in-check? turn (@game :board) (@game :en-passant-target))
+          is-in-check-other-turn (in-check? other-turn (@game :board) (@game :en-passant-target))
+          no-possible-moves-turn (not (any-possible-moves? turn (@game :board) (@game :en-passant-target)))
+          no-possible-moves-other-turn (not (any-possible-moves? other-turn (@game :board) (@game :en-passant-target)))]
+      (cond (and is-in-check-other-turn no-possible-moves-other-turn) (checkmate! turn)
+            is-in-check-other-turn (in-check! other-turn)
+            no-possible-moves-other-turn (draw!)
+            (and is-in-check-turn no-possible-moves-turn) (checkmate! other-turn)
+            is-in-check-turn (in-check! turn)
+            :else (in-check! nil)))
+    (if (>= halfmove 50)
+      (swap! game assoc :fifty-move-rule true) (swap! game assoc :fifty-move-rule false))))
 
 (defn activate-piece! [square x y]
   (swap! game assoc :state :moving
@@ -169,42 +167,39 @@
   (swap! game assoc :turn (other-color (@game :turn))))
 
 (defn update-post-castle! [algebraic-castle]
-  (let [{:keys [turn board castling en-passant-target]} @game
+  (let [{:keys [turn board en-passant-target]} @game
         new-color (other-color turn)]
-    (do
-      (update-turn-and-half-fullmoves! true)
-      (update-check! new-color)
-      (let [no-possible-moves (not (any-possible-moves? new-color board en-passant-target))
-            is-checkmate (and (@game :in-check) no-possible-moves)]
-        (cond is-checkmate (checkmate! turn)
-              no-possible-moves (draw!)))
-      (update-fen!)
-      (swap! game update :algebraic-moves conj algebraic-castle))))
+    (update-turn-and-half-fullmoves! true)
+    (update-check! new-color)
+    (let [no-possible-moves (not (any-possible-moves? new-color board en-passant-target))
+          is-checkmate (and (@game :in-check) no-possible-moves)]
+      (cond is-checkmate (checkmate! turn)
+            no-possible-moves (draw!)))
+    (update-fen!)
+    (swap! game update :algebraic-moves conj algebraic-castle)))
 
 (defn castle-queenside! []
-  (let [{:keys [turn board castling]} @game
+  (let [{:keys [turn castling]} @game
         y (if (= turn 'w) 7 0)]
-    (do
-      (swap! game assoc-in [:board y 2] {:piece-type 'k :color turn :x 2 :y y})
-      (swap! game assoc-in [:board y 4] {})
-      (swap! game assoc-in [:board y 3] {:piece-type 'r :color turn :x 3 :y y})
-      (swap! game assoc-in [:board y 0] {})
-      (swap! game assoc-in [:castling (keyword turn)] (assoc (get castling (keyword turn)) :king-moved true :queenside-rook-moved true :has-castled true))
-      (update-post-castle! "0-0-0"))))
+    (swap! game assoc-in [:board y 2] {:piece-type 'k :color turn :x 2 :y y})
+    (swap! game assoc-in [:board y 4] {})
+    (swap! game assoc-in [:board y 3] {:piece-type 'r :color turn :x 3 :y y})
+    (swap! game assoc-in [:board y 0] {})
+    (swap! game assoc-in [:castling (keyword turn)] (assoc (get castling (keyword turn)) :king-moved true :queenside-rook-moved true :has-castled true))
+    (update-post-castle! "0-0-0")))
 
 (defn castle-kingside! []
-  (let [{:keys [turn board castling]} @game
+  (let [{:keys [turn castling]} @game
         y (if (= turn 'w) 7 0)]
-    (do
-      (swap! game assoc-in [:board y 6] {:piece-type 'k :color turn :x 6 :y y})
-      (swap! game assoc-in [:board y 4] {})
-      (swap! game assoc-in [:board y 5] {:piece-type 'r :color turn :x 5 :y y})
-      (swap! game assoc-in [:board y 7] {})
-      (swap! game assoc-in [:castling (keyword turn)] (assoc (get castling (keyword turn)) :king-moved true :kingside-rook-moved true :has-castled true))
-      (update-post-castle! "0-0"))))
+    (swap! game assoc-in [:board y 6] {:piece-type 'k :color turn :x 6 :y y})
+    (swap! game assoc-in [:board y 4] {})
+    (swap! game assoc-in [:board y 5] {:piece-type 'r :color turn :x 5 :y y})
+    (swap! game assoc-in [:board y 7] {})
+    (swap! game assoc-in [:castling (keyword turn)] (assoc (get castling (keyword turn)) :king-moved true :kingside-rook-moved true :has-castled true))
+    (update-post-castle! "0-0")))
 
-(defn update-castling! [active-piece end-x end-y]
-  (let [turn (@game :turn) {:keys [color piece-type x]} active-piece]
+(defn update-castling! [active-piece]
+  (let [turn (@game :turn) {:keys [piece-type x]} active-piece]
     (cond (= piece-type 'k) (swap! game assoc-in [:castling (keyword turn) :king-moved] true)
           (and (= piece-type 'r) (= x 0)) (swap! game assoc-in [:castling (keyword turn) :queenside-rook-moved] true)
           (and (= piece-type 'r) (= x 7)) (swap! game assoc-in [:castling (keyword turn) :kingside-rook-moved] true))))
@@ -229,21 +224,22 @@
   (let [landing-color (active-piece :color)
         new-color (other-color landing-color)
         should-increment-halfmove (not (= (active-piece :piece-type) 'p))]
-    (do (update-board! active-piece end-x end-y)
-        (clear-active-piece!)
-        (update-en-passant! active-piece end-x end-y)
-        (update-castling! active-piece end-x end-y)
-        (update-promotion! active-piece end-x end-y)
-        (update-turn-and-half-fullmoves! should-increment-halfmove)
-        (update-check! new-color)
-        (let [no-possible-moves (not (any-possible-moves? new-color (@game :board) (@game :en-passant-target)))
-              is-checkmate (and (@game :in-check) no-possible-moves)]
-          (cond is-checkmate (checkmate! landing-color)
-                no-possible-moves (draw!)))
-        (update-fen!)
-        (swap! game update :algebraic-moves conj (board-move->algebraic-move active-piece end-x end-y))
-        (update-threefold-repitition!))))
+    (update-board! active-piece end-x end-y)
+    (clear-active-piece!)
+    (update-en-passant! active-piece end-x end-y)
+    (update-castling! active-piece)
+    (update-promotion! active-piece end-x end-y)
+    (update-turn-and-half-fullmoves! should-increment-halfmove)
+    (update-check! new-color)
+    (let [no-possible-moves (not (any-possible-moves? new-color (@game :board) (@game :en-passant-target)))
+          is-checkmate (and (@game :in-check) no-possible-moves)]
+      (cond is-checkmate (checkmate! landing-color)
+            no-possible-moves (draw!)))
+    (update-fen!)
+    (swap! game update :algebraic-moves conj (board-move->algebraic-move active-piece end-x end-y))
+    (update-threefold-repitition!)))
 
+;; TODO clean up
 (defn fen-form [initial-fen]
   (let [ifen (@game :fen)
         form-state (reagent/atom {:fen ifen})]
