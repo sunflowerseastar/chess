@@ -288,7 +288,9 @@
                               (first (filter #(and (= (% :color) in-check) (= (% :piece-type) 'k)) (flatten board)))]
                           [:div.chess {:class [(when (@ui :is-info-page-showing) "is-info-page-showing")
                                                (when (@ui :has-initially-loaded) "has-initially-loaded")]}
-                           [:div.rook-three-lines {:on-click #(swap! ui assoc :is-info-page-showing (not (@ui :is-info-page-showing)))}
+                           [:div.rook-three-lines
+                            {:data-cy "toggle-info-page"
+                             :on-click #(swap! ui assoc :is-info-page-showing (not (@ui :is-info-page-showing)))}
                             (svg-of 'm "none")]
                            [:div.board-container
                             (if (@ui :is-info-page-showing)
