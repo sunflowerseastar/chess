@@ -24,7 +24,7 @@
                       is-fen-valid?]]
    [chess.helpers :refer [board-after-move board-move->algebraic-move other-color]]
    [chess.components :refer [info-page]]
-   [reagent.core :as reagent :refer [atom create-class]]))
+   [reagent.core :as reagent :refer [atom create-class track]]))
 
 (defn generate-board []
   [(vec (map #(hash-map :color 'b :piece-type %1 :x %2 :y 0) ['r 'n 'b 'q 'k 'b 'n 'r] (range 0 8)))
@@ -51,11 +51,15 @@
                          :board (generate-board)
                          :halfmove 0
                          :fullmove 1
-                         :fen ""
+
+                         ;; the current-board fen is derived, see current-fen below
                          :fens []
+                         :fens-pointer -1
+
+                         ;; fen-board-states are fens without the move information at the end
+                         ;; TODO derive these instead of managing them?
                          :fen-board-states []
-                         :algebraic-moves []
-                         :fens-pointer -1})
+                         :algebraic-moves []})
 
 (def score-initial-state {:wins {:w 0 :b 0}
                           :draws 0})
@@ -64,24 +68,31 @@
 (def score (atom score-initial-state))
 (def ui (atom {:is-info-page-showing false :has-initially-loaded false}))
 
+(defn current-fen []
+  (let [current-fens @(track #(:fens @game))
+        current-fens-pointer @(track #(:fens-pointer @game))]
+    (if (>= current-fens-pointer 0) (nth current-fens current-fens-pointer) nil)))
+
 (defn update-fen! []
   (let [fen-board-state (game->fen-board-state @game)
-        fen (create-fen @game)
+        new-fen (create-fen @game)
         fens (@game :fens)
         fen-board-states (@game :fen-board-states)
-        fens-pointer (@game :fens-pointer)]
-    (swap! game assoc :fen fen)
-    (if (= fens-pointer (dec (count fens)))
+        fens-pointer (@game :fens-pointer)
+        is-fens-pointer-at-the-latest-fen (= fens-pointer (dec (count fens)))]
+    (if is-fens-pointer-at-the-latest-fen
       ;; add state and bump pointer
-      (do (swap! game update :fens conj fen)
+      (do (swap! game update :fens conj new-fen)
           (swap! game update :fen-board-states conj fen-board-state)
           (swap! game assoc :fens-pointer (inc fens-pointer)))
       ;; pointer doesn't match, clobber fens and fen-board-states after pointer
       (let [fens-to-keep (vec (take (inc fens-pointer) fens))]
-        (swap! game assoc :fens (conj fens-to-keep fen))
-        (swap! game assoc :fen-board-states (conj fen-board-states fen-board-state))
+        (swap! game assoc :fens (conj fens-to-keep new-fen))
+        (swap! game assoc :fen-board-states (conj fen-board-states fen-board-state)) ;; TODO what do board states do, and why can they be accrete-only?
         (swap! game assoc :fens-pointer (count fens-to-keep))))))
 
+;; TODO - convert to derived state.. use cursor?
+;; (def fbs-cursor (reagent/cursor game [:fen-board-states])) ..?
 (defn update-threefold-repitition! []
   (let [fbs (@game :fen-board-states)
         threefold-repitition (> (count (filter #(= % (last fbs)) fbs)) 2)]
@@ -262,12 +273,14 @@
                   is-r (= key "R")]
               (cond is-left (let [fens (@game :fens)
                                   fens-pointer (@game :fens-pointer)]
-                              (when (> fens-pointer 0)
+                              (when (> fens-pointer 0) ;; undo is possible
+                                ;; undo: basically, dec pointer
                                 (swap! game assoc :fens-pointer (dec fens-pointer))
                                 (set-game-to-fen! (nth fens (dec fens-pointer)))))
                     is-right (let [fens (@game :fens)
                                    fens-pointer (@game :fens-pointer)]
-                               (when (> (- (count fens) 1) fens-pointer)
+                               (when (> (dec (count fens)) fens-pointer) ;; redo is possible
+                                 ;; redo: basically, inc pointer
                                  (swap! game assoc :fens-pointer (inc fens-pointer))
                                  (set-game-to-fen! (nth fens (inc fens-pointer)))))
                     (or is-enter is-space) (when (not= (:state @game) :stopped)
@@ -279,7 +292,7 @@
       :component-will-unmount #(.removeEventListener js/document "keydown" keyboard-listeners)
       :reagent-render (fn [this]
                         (let [{:keys [active-piece board castling current-winner draws
-                                      en-passant-target fen fifty-move-rule fullmove halfmove
+                                      en-passant-target fifty-move-rule fullmove halfmove
                                       in-check state result threefold-repitition turn]} @game
                               {{:keys [w b]} :wins} @score
                               stopped-p (= state :stopped)
@@ -294,11 +307,23 @@
                             (svg-of 'm "none")]
                            [:div.board-container
                             (if (@ui :is-info-page-showing)
-                              (info-page fen is-fen-valid? set-game-to-fen! update-fen!
-                                         draws current-winner result turn
-                                         castling->fen-castling castling
-                                         in-check halfmove fullmove b w
-                                         en-passant-target->fen-en-passant en-passant-target)
+                              (info-page {:current-fen (current-fen)
+                                          :is-fen-valid? is-fen-valid?
+                                          :set-game-to-fen! set-game-to-fen!
+                                          :update-fen! update-fen!
+                                          :draws draws
+                                          :current-winner current-winner
+                                          :result result
+                                          :turn turn
+                                          :castling->fen-castling castling->fen-castling
+                                          :castling castling
+                                          :in-check in-check
+                                          :halfmove halfmove
+                                          :fullmove fullmove
+                                          :b b
+                                          :w w
+                                          :en-passant-target->fen-en-passant en-passant-target->fen-en-passant
+                                          :en-passant-target en-passant-target})
                               [:div.board {:data-cy (cond (= (@game :result) :checkmate) "checkmate"
                                                           in-check "check")
                                            :class [(if (= (@game :result) :checkmate) (str current-winner " checkmate") turn)

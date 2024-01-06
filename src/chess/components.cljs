@@ -1,7 +1,8 @@
-(ns chess.components)
+(ns chess.components
+  (:require [reagent.core :as reagent :refer [atom]]))
 
-(defn fen-form-component [fen is-fen-valid? set-game-to-fen! update-fen!]
-  (let [local-fen (atom fen)]
+(defn fen-form-component [current-fen is-fen-valid? set-game-to-fen! update-fen!]
+  (let [local-fen (atom current-fen)]
     (fn []
       [:form.fen-form {:on-submit
                        #(do (.preventDefault %)
@@ -14,12 +15,13 @@
                 :on-change #(reset! local-fen (-> % .-target .-value))}]
        [:button {:class "white-bg" :type :submit} "fen"]])))
 
-(defn info-page [fen is-fen-valid? set-game-to-fen! update-fen! draws
-                 current-winner result turn castling->fen-castling castling
-                 in-check halfmove fullmove b w
-                 en-passant-target->fen-en-passant en-passant-target]
+(defn info-page [{:keys [current-fen is-fen-valid? set-game-to-fen! update-fen! draws
+                         current-winner result turn castling->fen-castling castling
+                         in-check halfmove fullmove b w
+                         en-passant-target->fen-en-passant en-passant-target]}]
   [:div.info-page
-   [:div.fen-container [fen-form-component fen is-fen-valid? set-game-to-fen! update-fen!]]
+   [:div.fen-container
+    [fen-form-component current-fen is-fen-valid? set-game-to-fen! update-fen!]]
    [:ul
     [:li "wins:" [:ul [:li "white: " w] [:li "black: " b]]]
     [:li "draws: " draws]
