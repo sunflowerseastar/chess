@@ -23,6 +23,7 @@
                       ;; fen-positions->board
                       is-fen-valid?]]
    [chess.helpers :refer [board-after-move board-move->algebraic-move other-color]]
+   [chess.components :refer [info-page]]
    [reagent.core :as reagent :refer [atom create-class]]))
 
 (defn generate-board []
@@ -50,7 +51,6 @@
                          :board (generate-board)
                          :halfmove 0
                          :fullmove 1
-                         :fen-form ""
                          :fen ""
                          :fens []
                          :fen-board-states []
@@ -70,7 +70,7 @@
         fens (@game :fens)
         fen-board-states (@game :fen-board-states)
         fens-pointer (@game :fens-pointer)]
-    (swap! game assoc :fen fen :fen-form fen)
+    (swap! game assoc :fen fen)
     (if (= fens-pointer (dec (count fens)))
       ;; add state and bump pointer
       (do (swap! game update :fens conj fen)
@@ -239,24 +239,6 @@
     (swap! game update :algebraic-moves conj (board-move->algebraic-move active-piece end-x end-y))
     (update-threefold-repitition!)))
 
-;; TODO clean up
-(defn fen-form [initial-fen]
-  (let [ifen (@game :fen)
-        form-state (reagent/atom {:fen ifen})]
-    (letfn [(on-submit [e]
-              (.preventDefault e)
-              (let [fen (@game :fen-form)]
-                (if (is-fen-valid? fen)
-                  (do
-                    (set-game-to-fen! fen)
-                    (update-fen!)))))]
-      (fn []
-        [:form.fen-form {:on-submit #(on-submit %)}
-         [:input {:type :text :name :fen
-                  :value (@game :fen-form)
-                  :on-change #(swap! game assoc :fen-form (-> % .-target .-value))}]
-         [:button {:class "white-bg" :type :submit} "fen"]]))))
-
 (defn make-move []
   (let [{:keys [board en-passant-target turn]} @game]
     (when (not= (@game :state) :stopped)
@@ -296,7 +278,9 @@
                              (.addEventListener js/document "keydown" keyboard-listeners))
       :component-will-unmount #(.removeEventListener js/document "keydown" keyboard-listeners)
       :reagent-render (fn [this]
-                        (let [{:keys [active-piece board castling current-winner draws en-passant-target fen fifty-move-rule fullmove halfmove in-check state result threefold-repitition turn]} @game
+                        (let [{:keys [active-piece board castling current-winner draws
+                                      en-passant-target fen fifty-move-rule fullmove halfmove
+                                      in-check state result threefold-repitition turn]} @game
                               {{:keys [w b]} :wins} @score
                               stopped-p (= state :stopped)
                               off-p (and (= state :stopped) (nil? current-winner))
@@ -307,70 +291,63 @@
                            [:div.rook-three-lines {:on-click #(swap! ui assoc :is-info-page-showing (not (@ui :is-info-page-showing)))}
                             (svg-of 'm "none")]
                            [:div.board-container
-                            (if (@ui :is-info-page-showing) [:div.info-page
-                                                             [:div.fen-container [fen-form fen]]
-                                                             [:ul
-                                                              [:li "wins:" [:ul [:li "white: " w] [:li "black: " b]]]
-                                                              [:li "draws: " draws]
-                                                              [:li "current-winner: " current-winner]
-                                                              [:li "result: " result]
-                                                              [:li "turn: " turn]
-                                                              [:li "castle availability: " (castling->fen-castling castling)]
-                                                              [:li "en passant: " (en-passant-target->fen-en-passant en-passant-target)]
-                                                              [:li "in-check: " in-check]
-                                                              [:li "halfmove: " halfmove]
-                                                              [:li "fullmove: " fullmove]]]
-                                [:div.board {:data-cy (cond (= (@game :result) :checkmate) "checkmate"
-                                                            in-check "check")
-                                             :class [(if (= (@game :result) :checkmate) (str current-winner " checkmate") turn)
-                                                     (when (= (@game :result) :draw) "draw")
-                                                     (when (not-empty active-piece) "is-active")
-                                                     (when stopped-p "stopped-p")
-                                                     (when off-p "off-p")]}
-                                 (map-indexed
-                                  (fn [y row]
-                                    (map-indexed
-                                     (fn [x square]
-                                       (let [{:keys [color piece-type]} square
-                                             is-state-rest-p (= state :rest)
-                                             is-state-moving-p (= state :moving)
-                                             is-current-color-turn-p (= turn color)
-                                             can-activate-p (and is-state-rest-p is-current-color-turn-p)
-                                             is-active-p (and (= (active-piece :x) x) (= (active-piece :y) y))]
-                                         [:div.square
-                                          {:key (str x y)
-                                           :class [(when (or (and (even? y) (odd? x)) (and (odd? y) (even? x))) "dark")
-                                                   (when can-activate-p "can-activate-p")
-                                                   (when is-active-p "active-p")
-                                                   (when (and (= king-x x) (= king-y y)) "in-check")]
-                                           :style {:grid-column (+ x 1) :grid-row (+ y 1)}
-                                           :data-cy (str ((vec "abcdefgh") x) (- 8 y))
-                                           :draggable true
-                                           :on-drag-start #(do (.setData (.-dataTransfer %) "text/plain" "")
-                                                               (when can-activate-p (activate-piece! square x y)))
-                                           :on-drag-enter #(swap! game update :piece-drag assoc :x x :y y)
-                                           :on-drag-end #(let [drag-x (-> @game :piece-drag :x)
-                                                               drag-y (-> @game :piece-drag :y)
-                                                               is-drag-end-active (and (= (active-piece :x) drag-x) (= (active-piece :y) drag-y))]
-                                                           (cond is-drag-end-active (clear-active-piece!)
-                                                                 is-state-moving-p
-                                                                 (if (and (is-legal? active-piece drag-x drag-y board en-passant-target)
-                                                                          (not (in-check? (@game :turn) (board-after-move active-piece drag-x drag-y board) en-passant-target)))
-                                                                   (land-piece! active-piece drag-x drag-y)
-                                                                   (clear-active-piece!))))
-                                           :on-click #(cond can-activate-p (activate-piece! square x y)
-                                                            is-active-p (clear-active-piece!)
-                                                            is-state-moving-p
-                                                            (if (and (is-legal? active-piece x y board en-passant-target)
-                                                                     (not (in-check? (@game :turn) (board-after-move active-piece x y board) en-passant-target)))
-                                                              (land-piece! active-piece x y)
-                                                              (clear-active-piece!)))}
-                                          (when (not-empty square)
-                                            [:span.piece-container
-                                             {:data-cy "piece"
-                                              :class [color piece-type]} (svg-of piece-type color)])]))
-                                     row))
-                                  board)])]
+                            (if (@ui :is-info-page-showing)
+                              (info-page fen is-fen-valid? set-game-to-fen! update-fen!
+                                         draws current-winner result turn
+                                         castling->fen-castling castling
+                                         in-check halfmove fullmove b w
+                                         en-passant-target->fen-en-passant en-passant-target)
+                              [:div.board {:data-cy (cond (= (@game :result) :checkmate) "checkmate"
+                                                          in-check "check")
+                                           :class [(if (= (@game :result) :checkmate) (str current-winner " checkmate") turn)
+                                                   (when (= (@game :result) :draw) "draw")
+                                                   (when (not-empty active-piece) "is-active")
+                                                   (when stopped-p "stopped-p")
+                                                   (when off-p "off-p")]}
+                               (map-indexed
+                                (fn [y row]
+                                  (map-indexed
+                                   (fn [x square]
+                                     (let [{:keys [color piece-type]} square
+                                           is-state-rest-p (= state :rest)
+                                           is-state-moving-p (= state :moving)
+                                           is-current-color-turn-p (= turn color)
+                                           can-activate-p (and is-state-rest-p is-current-color-turn-p)
+                                           is-active-p (and (= (active-piece :x) x) (= (active-piece :y) y))]
+                                       [:div.square
+                                        {:key (str x y)
+                                         :class [(when (or (and (even? y) (odd? x)) (and (odd? y) (even? x))) "dark")
+                                                 (when can-activate-p "can-activate-p")
+                                                 (when is-active-p "active-p")
+                                                 (when (and (= king-x x) (= king-y y)) "in-check")]
+                                         :style {:grid-column (+ x 1) :grid-row (+ y 1)}
+                                         :data-cy (str ((vec "abcdefgh") x) (- 8 y))
+                                         :draggable true
+                                         :on-drag-start #(do (.setData (.-dataTransfer %) "text/plain" "")
+                                                             (when can-activate-p (activate-piece! square x y)))
+                                         :on-drag-enter #(swap! game update :piece-drag assoc :x x :y y)
+                                         :on-drag-end #(let [drag-x (-> @game :piece-drag :x)
+                                                             drag-y (-> @game :piece-drag :y)
+                                                             is-drag-end-active (and (= (active-piece :x) drag-x) (= (active-piece :y) drag-y))]
+                                                         (cond is-drag-end-active (clear-active-piece!)
+                                                               is-state-moving-p
+                                                               (if (and (is-legal? active-piece drag-x drag-y board en-passant-target)
+                                                                        (not (in-check? (@game :turn) (board-after-move active-piece drag-x drag-y board) en-passant-target)))
+                                                                 (land-piece! active-piece drag-x drag-y)
+                                                                 (clear-active-piece!))))
+                                         :on-click #(cond can-activate-p (activate-piece! square x y)
+                                                          is-active-p (clear-active-piece!)
+                                                          is-state-moving-p
+                                                          (if (and (is-legal? active-piece x y board en-passant-target)
+                                                                   (not (in-check? (@game :turn) (board-after-move active-piece x y board) en-passant-target)))
+                                                            (land-piece! active-piece x y)
+                                                            (clear-active-piece!)))}
+                                        (when (not-empty square)
+                                          [:span.piece-container
+                                           {:data-cy "piece"
+                                            :class [color piece-type]} (svg-of piece-type color)])]))
+                                   row))
+                                board)])]
                            (let [can-castle-kingside (can-castle-kingside? turn board castling in-check)
                                  can-castle-queenside (can-castle-queenside? turn board castling in-check)]
                              (if (@ui :is-info-page-showing)
