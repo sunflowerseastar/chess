@@ -1,4 +1,3 @@
-/// <reference types="Cypress" />
 // TODO figure out 'Missing baseUrl in compilerOptions. tsconfig-paths will be skipped' when starting cypress
 describe("Two users (at same computer) play a game", () => {
   beforeEach(() => {
