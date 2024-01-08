@@ -116,7 +116,7 @@ input {
   transition: all 6s cubic-bezier(0.3, 0.8, 0.1, 0.95);
   pointer-events: none;
 }
-.board.off-p:after {
+.board.is-off:after {
   border-color: white;
   transition: all 1s cubic-bezier(0.3, 0.8, 0.1, 0.95);
 }
@@ -206,7 +206,7 @@ svg {
   transition: opacity 1s cubic-bezier(0.3, 0.8, 0.1, 0.95);
   opacity: 1;
 }
-.off-p svg {
+.is-off svg {
   opacity: 0;
 }
 svg.w {

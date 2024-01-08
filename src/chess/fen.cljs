@@ -1,8 +1,7 @@
 (ns chess.fen
   (:require
    [clojure.string :refer [index-of join lower-case split upper-case]]
-   [chess.helpers :refer [algebraic-notation->x-y is-lower-case-p]]
-   [chess.legal :refer [pawn-two-square-move-from-initial-rank? is-legal? in-check? any-possible-moves? can-castle-queenside?]]))
+   [chess.helpers :refer [algebraic-notation->x-y is-lower-case-p]]))
 
 (defn is-fen-valid? [fen] true)
 
@@ -87,10 +86,10 @@
           fen-rank-uncondensed->fen-rank-condensed))))
 
 (defn castling->fen-castling [{:keys [w b]}]
-  (let [K (if (and (not (w :has-castled)) (not (w :king-moved)) (not (w :kingside-rook-moved))) 'K)
-        Q (if (and (not (w :has-castled)) (not (w :king-moved)) (not (w :queenside-rook-moved))) 'Q)
-        k (if (and (not (b :has-castled)) (not (b :king-moved)) (not (b :kingside-rook-moved))) 'k)
-        q (if (and (not (b :has-castled)) (not (b :king-moved)) (not (b :queenside-rook-moved))) 'q)
+  (let [K (when (and (not (w :has-castled)) (not (w :king-moved)) (not (w :kingside-rook-moved))) 'K)
+        Q (when (and (not (w :has-castled)) (not (w :king-moved)) (not (w :queenside-rook-moved))) 'Q)
+        k (when (and (not (b :has-castled)) (not (b :king-moved)) (not (b :kingside-rook-moved))) 'k)
+        q (when (and (not (b :has-castled)) (not (b :king-moved)) (not (b :queenside-rook-moved))) 'q)
         fen-castling (str K Q k q)]
     (if (not-empty fen-castling) fen-castling "-")))
 
@@ -100,15 +99,16 @@
             rank (- 8 y)]
         (str file rank))))
 
-(defn game->fen-board-state [game]
+(defn game->fen-board-state
+  "A 'FEN board state' is a FEN without the halfmove and fullmove at the end."
+  [game]
   (let [{:keys [board castling en-passant-target turn]} game
         fen-rank (board->fen-rank board)
         fen-castling (castling->fen-castling castling)
         en-passant-algebraic (en-passant-target->fen-en-passant en-passant-target)]
     (str fen-rank " " turn " " fen-castling " " en-passant-algebraic)))
 
-(defn create-fen [{:keys [halfmove fullmove] :as game}]
-  (let [fen-board-state (game->fen-board-state game)
-        half-move-clock 0
-        full-move-clock 1]
-    (str fen-board-state " " halfmove " " fullmove)))
+(defn game->fen
+  "Given a game state, return its FEN."
+  [{:keys [halfmove fullmove] :as game}]
+  (str (game->fen-board-state game) " " halfmove " " fullmove))

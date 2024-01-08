@@ -12,7 +12,7 @@
                         is-legal?
                         pawn-two-square-move-from-initial-rank?]]
    [chess.fen :refer [castling->fen-castling
-                      create-fen
+                      game->fen
                       game->fen-board-state
                       en-passant-target->fen-en-passant
                       fen->castling
@@ -20,7 +20,6 @@
                       fen->board
                       fen->fullmove
                       fen->halfmove
-                      ;; fen-positions->board
                       is-fen-valid?]]
    [chess.helpers :refer [board-after-move board-move->algebraic-move other-color]]
    [chess.components :refer [info-page]]
@@ -73,9 +72,9 @@
         current-fens-pointer @(track #(:fens-pointer @game))]
     (if (>= current-fens-pointer 0) (nth current-fens current-fens-pointer) nil)))
 
-(defn update-fen! []
+(defn append-fen-and-move-fen-pointer! []
   (let [fen-board-state (game->fen-board-state @game)
-        new-fen (create-fen @game)
+        new-fen (game->fen @game)
         fens (@game :fens)
         fen-board-states (@game :fen-board-states)
         fens-pointer (@game :fens-pointer)
@@ -86,7 +85,10 @@
           (swap! game update :fen-board-states conj fen-board-state)
           (swap! game assoc :fens-pointer (inc fens-pointer)))
       ;; pointer doesn't match, clobber fens and fen-board-states after pointer
-      (let [fens-to-keep (vec (take (inc fens-pointer) fens))]
+      (let [fens-to-keep (vec (take (inc fens-pointer) fens))
+            fens-to-drop (vec (drop (inc fens-pointer) fens))]
+        (println "FEN is being updated not from the head (viz. from a previous state reached via undo).")
+        (println "The following FEN history is being ejected:" fens-to-drop)
         (swap! game assoc :fens (conj fens-to-keep new-fen))
         (swap! game assoc :fen-board-states (conj fen-board-states fen-board-state)) ;; TODO what do board states do, and why can they be accrete-only?
         (swap! game assoc :fens-pointer (count fens-to-keep))))))
@@ -105,7 +107,7 @@
 (defn start! []
   (reset! game game-initial-state)
   (swap! game assoc :state :rest :turn 'w :board (generate-board))
-  (update-fen!))
+  (append-fen-and-move-fen-pointer!))
 
 (defn in-check! [color]
   (swap! game assoc :in-check color))
@@ -186,7 +188,7 @@
           is-checkmate (and (@game :in-check) no-possible-moves)]
       (cond is-checkmate (checkmate! turn)
             no-possible-moves (draw!)))
-    (update-fen!)
+    (append-fen-and-move-fen-pointer!)
     (swap! game update :algebraic-moves conj algebraic-castle)))
 
 (defn castle-queenside! []
@@ -246,11 +248,11 @@
           is-checkmate (and (@game :in-check) no-possible-moves)]
       (cond is-checkmate (checkmate! landing-color)
             no-possible-moves (draw!)))
-    (update-fen!)
+    (append-fen-and-move-fen-pointer!)
     (swap! game update :algebraic-moves conj (board-move->algebraic-move active-piece end-x end-y))
     (update-threefold-repitition!)))
 
-(defn make-move []
+(defn make-computer-move []
   (let [{:keys [board en-passant-target turn]} @game]
     (when (not= (@game :state) :stopped)
       (let [openings-table-move-or-castle (get-openings-table-move-or-castle (game->fen-board-state @game) turn board)
@@ -284,7 +286,7 @@
                                  (swap! game assoc :fens-pointer (inc fens-pointer))
                                  (set-game-to-fen! (nth fens (inc fens-pointer)))))
                     (or is-enter is-space) (when (not= (:state @game) :stopped)
-                                             (make-move))
+                                             (make-computer-move))
                     is-r (reset-game!))))]
     (create-class
      {:component-did-mount (fn [] (js/setTimeout #(swap! ui assoc :has-initially-loaded true) 0)
@@ -295,8 +297,8 @@
                                       en-passant-target fifty-move-rule fullmove halfmove
                                       in-check state result threefold-repitition turn]} @game
                               {{:keys [w b]} :wins} @score
-                              stopped-p (= state :stopped)
-                              off-p (and (= state :stopped) (nil? current-winner))
+                              is-stopped (= state :stopped)
+                              is-off (and (= state :stopped) (nil? current-winner))
                               {king-x :x, king-y :y, :or {king-x -1 king-y -1}}
                               (first (filter #(and (= (% :color) in-check) (= (% :piece-type) 'k)) (flatten board)))]
                           [:div.chess {:class [(when (@ui :is-info-page-showing) "is-info-page-showing")
@@ -310,7 +312,7 @@
                               (info-page {:current-fen (current-fen)
                                           :is-fen-valid? is-fen-valid?
                                           :set-game-to-fen! set-game-to-fen!
-                                          :update-fen! update-fen!
+                                          :append-fen-and-move-fen-pointer! append-fen-and-move-fen-pointer!
                                           :draws draws
                                           :current-winner current-winner
                                           :result result
@@ -329,8 +331,8 @@
                                            :class [(if (= (@game :result) :checkmate) (str current-winner " checkmate") turn)
                                                    (when (= (@game :result) :draw) "draw")
                                                    (when (not-empty active-piece) "is-active")
-                                                   (when stopped-p "stopped-p")
-                                                   (when off-p "off-p")]}
+                                                   (when is-stopped "is-stopped")
+                                                   (when is-off "is-off")]}
                                (map-indexed
                                 (fn [y row]
                                   (map-indexed
@@ -382,7 +384,7 @@
                                 [:div.button-container [:button {:class "white-bg" :on-click #(start!)} "restart"]]
                                 [:div.button-container [:button {:class "white-bg reset" :on-click #(reset-game!)} "reset"]]]
                                [:div.button-container
-                                [:button {:class (when (not stopped-p) "inactive") :on-click #(start!) :data-cy "start"} "start"]
+                                [:button {:class (when (not is-stopped) "inactive") :on-click #(start!) :data-cy "start"} "start"]
                                 [:button {:class (when (not can-castle-queenside) "inactive")
                                           :data-cy "castle-q" :on-click #(castle-queenside!)} "castle Q"]
                                 [:button {:class (when (not can-castle-kingside) "inactive")
