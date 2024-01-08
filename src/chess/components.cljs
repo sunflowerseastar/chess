@@ -17,7 +17,7 @@
 
 (defn info-page [{:keys [current-fen is-fen-valid? set-game-to-fen! append-fen-and-move-fen-pointer! draws
                          current-winner result turn castling->fen-castling castling
-                         in-check halfmove fullmove b w
+                         is-in-check halfmove fullmove b w
                          en-passant-target->fen-en-passant en-passant-target]}]
   [:div.info-page
    [:div.fen-container
@@ -30,6 +30,6 @@
     [:li "turn: " turn]
     [:li "castle availability: " (castling->fen-castling castling)]
     [:li "en passant: " (en-passant-target->fen-en-passant en-passant-target)]
-    [:li "in-check: " in-check]
+    [:li "is-in-check: " is-in-check]
     [:li "halfmove: " halfmove]
     [:li "fullmove: " fullmove]]])

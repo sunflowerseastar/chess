@@ -231,7 +231,7 @@ svg.w {
     stroke-width: 7px;
   }
 }
-.checkmate .square.in-check:before {
+.checkmate .square.is-in-check:before {
   background: repeating-linear-gradient(
     -45deg,
     #f00,
@@ -243,11 +243,11 @@ svg.w {
 .checkmate .square:after {
   border-color: transparent;
 }
-.square.in-check:after {
+.square.is-in-check:after {
   border: 3px solid yellow;
   opacity: 1;
 }
-.checkmate .square.in-check:after {
+.checkmate .square.is-in-check:after {
   border-color: transparent;
 }
 

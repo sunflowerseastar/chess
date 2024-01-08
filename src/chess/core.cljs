@@ -41,7 +41,6 @@
                          :piece-drag {:x -1 :y -1}
                          :state :stopped
                          :turn 'w
-                         :in-check nil
                          :fifty-move-rule false
                          :result nil
                          :castling {:w {:queenside-rook-moved false :kingside-rook-moved false :king-moved false :has-castled false}
@@ -79,6 +78,13 @@
               previous-fen-board-states-that-match-current (filter #(= % current-fen-board-state) fen-board-states-up-to-pointer)]
           (> (count previous-fen-board-states-that-match-current) 2)))))
 
+(defn is-in-check []
+  (let [board @(track #(:board @game))
+        en-passant-target @(track #(:en-passant-target @game))]
+    (cond (in-check? 'w board en-passant-target) 'w
+          (in-check? 'b board en-passant-target) 'b
+          :else nil)))
+
 (defn append-fen-and-move-fen-pointer! []
   (let [new-fen (game->fen @game)
         fens (:fens @game)
@@ -104,15 +110,6 @@
   (reset! game game-initial-state)
   (swap! game assoc :state :rest :board (generate-board))
   (append-fen-and-move-fen-pointer!))
-
-(defn in-check! [color]
-  (swap! game assoc :in-check color))
-
-(defn update-check! [color]
-  (let [is-in-check (in-check? color (:board @game) (:en-passant-target @game))]
-    (if is-in-check
-      (in-check! color)
-      (in-check! nil))))
 
 (defn checkmate! [color]
   (swap! score assoc-in [:wins (keyword color)] (inc (get-in @score [:wins (keyword color)])))
@@ -140,11 +137,8 @@
           no-possible-moves-turn (not (any-possible-moves? turn board en-passant-target))
           no-possible-moves-other-turn (not (any-possible-moves? other-turn board en-passant-target))]
       (cond (and is-in-check-other-turn no-possible-moves-other-turn) (checkmate! turn)
-            is-in-check-other-turn (in-check! other-turn)
             no-possible-moves-other-turn (draw!)
-            (and is-in-check-turn no-possible-moves-turn) (checkmate! other-turn)
-            is-in-check-turn (in-check! turn)
-            :else (in-check! nil)))
+            (and is-in-check-turn no-possible-moves-turn) (checkmate! other-turn)))
     (if (>= halfmove 50)
       (swap! game assoc :fifty-move-rule true) (swap! game assoc :fifty-move-rule false))))
 
@@ -181,9 +175,8 @@
   (let [{:keys [turn board en-passant-target]} @game
         new-color (other-color turn)]
     (update-turn-and-half-fullmoves! true)
-    (update-check! new-color)
     (let [no-possible-moves (not (any-possible-moves? new-color board en-passant-target))
-          is-checkmate (and (:in-check @game) no-possible-moves)]
+          is-checkmate (and (is-in-check) no-possible-moves)]
       (cond is-checkmate (checkmate! turn)
             no-possible-moves (draw!)))
     (append-fen-and-move-fen-pointer!)
@@ -241,9 +234,8 @@
     (update-castling! active-piece)
     (update-promotion! active-piece end-x end-y)
     (update-turn-and-half-fullmoves! should-increment-halfmove)
-    (update-check! new-color)
     (let [no-possible-moves (not (any-possible-moves? new-color (:board @game) (:en-passant-target @game)))
-          is-checkmate (and (:in-check @game) no-possible-moves)]
+          is-checkmate (and (is-in-check) no-possible-moves)]
       (cond is-checkmate (checkmate! landing-color)
             no-possible-moves (draw!)))
     (append-fen-and-move-fen-pointer!)
@@ -290,13 +282,14 @@
       :reagent-render (fn [this]
                         (let [{:keys [active-piece board castling current-winner draws
                                       en-passant-target fifty-move-rule fullmove halfmove
-                                      in-check state result turn]} @game
+                                      state result turn]} @game
                               {{:keys [w b]} :wins} @score
+                              is-in-check (is-in-check)
                               is-threefold-repitition (is-threefold-repitition)
                               is-stopped (= state :stopped)
                               is-off (and (= state :stopped) (nil? current-winner))
                               {king-x :x, king-y :y, :or {king-x -1 king-y -1}}
-                              (first (filter #(and (= (:color %) in-check) (= (:piece-type %) 'k)) (flatten board)))]
+                              (first (filter #(and (= (:color %) is-in-check) (= (:piece-type %) 'k)) (flatten board)))]
                           [:div.chess {:class [(when (:is-info-page-showing @ui) "is-info-page-showing")
                                                (when (:has-initially-loaded @ui) "has-initially-loaded")]}
                            [:div.rook-three-lines
@@ -315,7 +308,7 @@
                                           :turn turn
                                           :castling->fen-castling castling->fen-castling
                                           :castling castling
-                                          :in-check in-check
+                                          :is-in-check is-in-check
                                           :halfmove halfmove
                                           :fullmove fullmove
                                           :b b
@@ -323,7 +316,7 @@
                                           :en-passant-target->fen-en-passant en-passant-target->fen-en-passant
                                           :en-passant-target en-passant-target})
                               [:div.board {:data-cy (cond (= (:result @game) :checkmate) "checkmate"
-                                                          in-check "check")
+                                                          is-in-check "check")
                                            :class [(if (= (:result @game) :checkmate) (str current-winner " checkmate") turn)
                                                    (when (= (:result @game) :draw) "draw")
                                                    (when (not-empty active-piece) "is-active")
@@ -344,7 +337,7 @@
                                          :class [(when (or (and (even? y) (odd? x)) (and (odd? y) (even? x))) "dark")
                                                  (when can-activate-p "can-activate-p")
                                                  (when is-active-p "active-p")
-                                                 (when (and (= king-x x) (= king-y y)) "in-check")]
+                                                 (when (and (= king-x x) (= king-y y)) "is-in-check")]
                                          :style {:grid-column (+ x 1) :grid-row (+ y 1)}
                                          :data-cy (str ((vec "abcdefgh") x) (- 8 y))
                                          :draggable true
@@ -377,8 +370,8 @@
                              [:div.button-container
                               [:div.button-container [:button {:class "white-bg" :on-click #(start!)} "restart"]]
                               [:div.button-container [:button {:class "white-bg reset" :on-click #(reset-game!)} "reset"]]]
-                             (let [can-castle-kingside (can-castle-kingside? turn board castling in-check)
-                                   can-castle-queenside (can-castle-queenside? turn board castling in-check)]
+                             (let [can-castle-kingside (can-castle-kingside? turn board castling is-in-check)
+                                   can-castle-queenside (can-castle-queenside? turn board castling is-in-check)]
                                [:div.button-container
                                 [:button {:class (when (not is-stopped) "inactive") :on-click #(start!) :data-cy "start"} "start"]
                                 [:button {:class (when (not can-castle-queenside) "inactive")
