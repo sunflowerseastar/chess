@@ -112,3 +112,10 @@
   "Given a game state, return its FEN."
   [{:keys [halfmove fullmove] :as game}]
   (str (game->fen-board-state game) " " halfmove " " fullmove))
+
+(defn fen->fen-board-state
+  "Takes a FEN, splits it on spaces, and rejoins (with spaces) all but the last two sections."
+  [fen] (as-> fen %
+          (split % #" ")
+          (take (- (count %) 2) %)
+          (join " " %)))

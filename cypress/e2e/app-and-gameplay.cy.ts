@@ -36,6 +36,39 @@ describe("Two users (at same computer) play a game", () => {
     cy.get('[data-cy="piece"]').should("not.be.visible");
   });
 
+  it("recognizes threefold repitition", () => {
+    cy.get('[data-cy="start"]').click();
+
+    cy.get('[data-cy="draw"]').should("have.class", "inactive");
+
+    // move knights out
+    cy.get('[data-cy="g1"]').click();
+    cy.get('[data-cy="f3"]').click();
+    cy.get('[data-cy="g8"]').click();
+    cy.get('[data-cy="f6"]').click();
+
+    // move knights in
+    cy.get('[data-cy="f3"]').click();
+    cy.get('[data-cy="g1"]').click();
+    cy.get('[data-cy="f6"]').click();
+    cy.get('[data-cy="g8"]').click();
+
+    // move knights out
+    cy.get('[data-cy="g1"]').click();
+    cy.get('[data-cy="f3"]').click();
+    cy.get('[data-cy="g8"]').click();
+    cy.get('[data-cy="f6"]').click();
+
+    // move knights in
+    cy.get('[data-cy="f3"]').click();
+    cy.get('[data-cy="g1"]').click();
+    cy.get('[data-cy="f6"]').click();
+    cy.get('[data-cy="draw"]').should("have.class", "inactive");
+    cy.get('[data-cy="g8"]').click();
+
+    cy.get('[data-cy="draw"]').should("not.have.class", "inactive");
+  });
+
   it("can reach fool's mate", () => {
     cy.get('[data-cy="start"]').click();
 
