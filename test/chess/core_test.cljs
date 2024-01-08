@@ -63,23 +63,23 @@
 
 (deftest get-color-test
   (testing "Checking piece color at given positions"
-    (is (= (helpers/get-color 0 0 (generate-board)) 'b)) ; Checking color of piece at 0,0 (should be black)
-    (is (= (helpers/get-color 7 7 (generate-board)) 'w)))) ; Checking color of piece at 7,7 (should be white)
+    (is (= (helpers/get-color 0 0 (generate-board)) 'b))
+    (is (= (helpers/get-color 7 7 (generate-board)) 'w))))
 
 (deftest get-distance-test
   (testing "Calculating distance between two points"
-    (is (= (helpers/get-distance 0 5) 5)) ; Distance between 0 and 5
-    (is (= (helpers/get-distance 7 2) 5)))) ; Distance between 7 and 2
+    (is (= (helpers/get-distance 0 5) 5))
+    (is (= (helpers/get-distance 7 2) 5))))
 
 (deftest my-inclusive-range-test
   (testing "Creating inclusive range of numbers"
-    (is (= (helpers/my-inclusive-range 1 3) '(1 2 3))) ; Inclusive range from 1 to 3
-    (is (= (helpers/my-inclusive-range 3 1) '(3 2 1))))) ; Inclusive range from 3 to 1
+    (is (= (helpers/my-inclusive-range 1 3) '(1 2 3)))
+    (is (= (helpers/my-inclusive-range 3 1) '(3 2 1)))))
 
 (deftest other-color-test
   (testing "Getting the opposite color"
-    (is (= (helpers/other-color 'w) 'b)) ; Opposite of white should be black
-    (is (= (helpers/other-color 'b) 'w)))) ; Opposite of black should be white
+    (is (= (helpers/other-color 'w) 'b))
+    (is (= (helpers/other-color 'b) 'w))))
 
 (deftest board-after-move-test
   (testing "Board state after moving a piece"
@@ -88,14 +88,13 @@
           end-x 0
           end-y 5
           new-board (helpers/board-after-move active-piece end-x end-y board)]
-      ;; (is (= true true))
       (is (empty? (helpers/get-piece 0 6 new-board))) ; Original position should be empty
       (is (= ((helpers/get-piece 0 5 new-board) :color) 'w))))) ; New position should have a white piece
 
 (deftest is-lower-case-p-test
   (testing "Checking if a string is in lower case"
-    (is (true? (helpers/is-lower-case-p "pawn"))) ; Lower case string "pawn"
-    (is (false? (helpers/is-lower-case-p "King"))))) ; Mixed case string "King"
+    (is (true? (helpers/is-lower-case-p "p")))
+    (is (false? (helpers/is-lower-case-p "K")))))
 
 (deftest algebraic-notation->x-y-test
   (testing "Converting Algebraic Notation to x y coordinates"

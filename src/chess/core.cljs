@@ -40,7 +40,7 @@
                          :active-piece {}
                          :piece-drag {:x -1 :y -1}
                          :state :stopped
-                         :turn nil
+                         :turn 'w
                          :in-check nil
                          :fifty-move-rule false
                          :result nil
@@ -102,7 +102,7 @@
 
 (defn start! []
   (reset! game game-initial-state)
-  (swap! game assoc :state :rest :turn 'w :board (generate-board))
+  (swap! game assoc :state :rest :board (generate-board))
   (append-fen-and-move-fen-pointer!))
 
 (defn in-check! [color]

@@ -3,28 +3,26 @@
    [clojure.string :refer [index-of join lower-case split upper-case]]
    [chess.helpers :refer [algebraic-notation->x-y is-lower-case-p]]))
 
+;; TODO
 (defn is-fen-valid? [fen] true)
 
 (defn expand-fen-positions [fen-positions]
   (reduce str (flatten (map #(if (> % 0) (repeat % '-) %) fen-positions))))
-
-(defn fen-positions->board [fen-positions]
-  (let [expanded-positions (expand-fen-positions fen-positions)
-        split-positions (split expanded-positions #"/")]
-    (vec (map-indexed (fn [y row]
-                        (vec (flatten (map-indexed (fn [x square]
-                                                     (cond (= square "-") {}
-                                                           (re-find #"\d" square) (repeat square {})
-                                                           :else (hash-map :color (if (is-lower-case-p square) 'b 'w)
-                                                                           :piece-type (symbol (lower-case square)) :x x :y y)))
-                                                   row))))
-                      split-positions))))
-
-(defn fen->fen-positions [fen]
-  (-> fen (split #" ") (nth 0)))
-
 (defn fen->board [fen]
-  (-> fen fen->fen-positions fen-positions->board))
+  (let [fen-positions (-> fen (split #" ") (nth 0))
+        expanded-positions (expand-fen-positions fen-positions)
+        split-positions (split expanded-positions #"/")]
+    (vec (map-indexed
+          (fn [y row]
+            (vec (flatten
+                  (map-indexed
+                   (fn [x square]
+                     (cond (= square "-") {}
+                           (re-find #"\d" square) (repeat square {})
+                           :else (hash-map :color (if (is-lower-case-p square) 'b 'w)
+                                           :piece-type (symbol (lower-case square)) :x x :y y)))
+                   row))))
+          split-positions))))
 
 (defn fen->en-passant-target [fen]
   (-> fen (split #" ") (nth 3) algebraic-notation->x-y))
@@ -72,9 +70,10 @@
         :else (recur (rest xs) x (str acc (if (= previous "-") counter previous)) 1)))))
 
 (defn board-rank->fen-rank-uncondensed [rank]
-  (letfn [(board-piece->fen-piece [piece]
-            (let [type (piece :piece-type)]
-              (if type (if (= (piece :color) 'w) (upper-case (str type)) (str type)) "-")))]
+  (letfn [(board-piece->fen-piece [{:keys [piece-type color]}]
+            (if piece-type
+              (if (= color 'w) (upper-case (str piece-type)) (str piece-type))
+              "-"))]
     (map board-piece->fen-piece rank)))
 
 (defn board->fen-rank [board]

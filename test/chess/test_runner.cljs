@@ -4,6 +4,7 @@
     ;; require all the namespaces that you want to test
     [chess.core-test]
     [chess.legal-test]
+    [chess.fen-test]
     [figwheel.main.testing :refer [run-tests-async]]))
 
 (defn -main [& args]

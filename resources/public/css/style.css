@@ -93,6 +93,12 @@ input {
   top: -10px;
   border-top: 1px solid black;
 }
+.board.is-off.w:before {
+  border-bottom: none;
+}
+.board.is-off.b:before {
+  border-top: none;
+}
 .board.checkmate.b:before {
   top: -15px;
   border-top: 5px solid #00ff7c;
@@ -129,7 +135,7 @@ input {
     #fff 12px,
     #fff 15px
   );
-  height: 6px;
+  height: 3px;
   opacity: 1;
   transition: all 1s cubic-bezier(0.3, 0.8, 0.1, 0.95);
   border: none;
