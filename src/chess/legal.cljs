@@ -92,7 +92,7 @@
   (let [flat-board (flatten board)
         opponents (vec (filter #(= (% :color) (other-color color)) flat-board))
         opponents-checking-ps (map #(is-legal? % question-x question-y board en-passant-target) opponents)]
-    (some true? opponents-checking-ps)))
+    (boolean (some true? opponents-checking-ps))))
 
 (defn in-check?
   "Take a color, board, and en-passant-target, and return true if it's in check."
@@ -101,7 +101,7 @@
         king (first (filter #(and (= (% :color) color) (= (% :piece-type) 'k)) flat-board))
         opponents (vec (filter #(= (% :color) (other-color color)) flat-board))
         opponents-checking-ps (map #(is-legal? % (king :x) (king :y) board en-passant-target) opponents)]
-    (some true? opponents-checking-ps)))
+    (boolean (some true? opponents-checking-ps))))
 
 (defn first-capture-or-rand [captures moves]
   (let [will-not-be-captured-captures (filter #(nil? (:can-be-captured %)) captures)
@@ -112,30 +112,35 @@
       (not-empty captures) (rand-nth captures)
       :else (rand-nth (filter #(not (nil? %)) moves)))))
 
-(defn get-all-legal-moves-not-in-check [color board en-passant-target]
+(defn get-all-legal-moves-not-in-check
+  "Take each piece of a given color, map through every square on the board, and
+  filter out whether it's a legal move or not. Also, indicate if it's a
+  capturing move."
+  [color board en-passant-target]
   (let [flat-board (flatten board)
         pieces (vec (filter #(= (% :color) color) flat-board))
         all-squares (for [x (range 0 8) y (range 0 8)] [x y])
-        all-legal-moves-not-in-check (flatten
-                                      (map #(map
-                                             (fn [[x y]]
-                                               (let [destination-piece (get-piece x y board)
-                                                     capture (destination-piece :piece-type)]
-                                                 (if (is-legal? % x y board en-passant-target)
-                                                   (if (not (in-check? color (board-after-move % x y board) en-passant-target))
-                                                     (let [cbc (can-be-captured? color (board-after-move % x y board) en-passant-target x y)]
-                                                       {:piece % :end-x x :end-y y :capture capture :can-be-captured cbc})))))
-                                             all-squares)
-                                           pieces))]
+        all-legal-moves-not-in-check
+        (->> pieces
+             (map #(map
+                    (fn [[x y]]
+                      (let [destination-piece (get-piece x y board)
+                            capture (destination-piece :piece-type)]
+                        (when (is-legal? % x y board en-passant-target)
+                          (when (not (in-check? color (board-after-move % x y board) en-passant-target))
+                            (let [cbc (can-be-captured? color (board-after-move % x y board) en-passant-target x y)]
+                              {:piece % :end-x x :end-y y :capture capture :can-be-captured cbc})))))
+                    all-squares))
+             flatten
+             (remove nil?))]
     all-legal-moves-not-in-check))
 
 (defn get-regular-move
   "Take a color, board, and en-passant-target, and return a move."
   [color board en-passant-target]
-  (let [all-legal-moves-not-in-check (get-all-legal-moves-not-in-check color board en-passant-target) ]
-    (let [moves (filter #(not (nil? %)) all-legal-moves-not-in-check)
-          captures (filter #(not (nil? (% :capture))) moves)]
-      (first-capture-or-rand captures moves))))
+  (let [moves (get-all-legal-moves-not-in-check color board en-passant-target)
+        captures (filter #(not (nil? (:capture %))) moves)]
+    (first-capture-or-rand captures moves)))
 
 (defn get-openings-table-move-or-castle [fen-board-state turn board]
   (let [matches-in-openings-table (filter #(= (:board-state %) fen-board-state) openings-table)
